@@ -3,8 +3,10 @@ use std::{
     fmt,
     io::Error as IoError,
     result,
+    str::Utf8Error,
 };
 
+use imap::Error as ImapError;
 use oauth2::reqwest::Error as ReqwestError;
 use oauth2::{url::ParseError as UrlParseError, ErrorResponse, RequestTokenError};
 use serde::{ser::SerializeStruct, Serialize};
@@ -26,6 +28,15 @@ impl Error {
 
     pub fn kind(&self) -> &ErrorKind {
         &self.kind
+    }
+}
+
+impl From<Utf8Error> for Error {
+    fn from(utf8_error: Utf8Error) -> Self {
+        Error::new(
+            ErrorKind::Utf8(utf8_error.into()),
+            "Failed to convert bytes to string",
+        )
     }
 }
 
@@ -70,6 +81,18 @@ impl From<UrlParseError> for Error {
     }
 }
 
+impl From<ImapError> for Error {
+    fn from(imap_error: ImapError) -> Self {
+        Error::new(ErrorKind::Imap(imap_error), "IMAP error")
+    }
+}
+
+impl From<String> for Error {
+    fn from(message: String) -> Self {
+        Error::new(ErrorKind::Generic(message.clone()), message)
+    }
+}
+
 impl Serialize for Error {
     fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
@@ -91,6 +114,9 @@ impl StdError for Error {
             ErrorKind::Reqwest(e) => Some(e),
             ErrorKind::Json(e) => Some(e),
             ErrorKind::UrlParse(e) => Some(e),
+            ErrorKind::Imap(e) => Some(e),
+            ErrorKind::Utf8(e) => Some(e),
+            ErrorKind::Generic(_e) => None,
             _ => None,
         }
     }
@@ -106,7 +132,10 @@ pub enum ErrorKind {
     Reqwest(ReqwestError),
     Json(JsonError),
     UrlParse(UrlParseError),
+    Imap(ImapError),
+    Utf8(Utf8Error),
     RequestTokenError,
+    Generic(String),
 }
 
 impl fmt::Display for Error {

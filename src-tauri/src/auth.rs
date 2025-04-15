@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use std::net::{SocketAddr, TcpListener};
 use std::sync::Arc;
 use tauri::async_runtime::JoinHandle;
-use tauri::{Manager, Url};
+use tauri::Manager;
 use tauri_plugin_opener::open_url;
 
 use crate::util::navigate;
@@ -181,8 +181,13 @@ async fn authorize(
         .exchange_code(query.code.clone())
         .set_pkce_verifier(PkceCodeVerifier::new(auth.pkce.1.clone()))
         .request_async(&http_client)
-        .await
-        .expect("Failed to exchange code for token");
+        .await;
+
+    if let Err(e) = token {
+        println!("Error exchanging code: {:?}", e);
+        return e.to_string();
+    }
+    let token = token.unwrap();
 
     // Get the email address from the profile endpoint
     let profile_response = reqwest::Client::new()
