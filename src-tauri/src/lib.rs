@@ -15,6 +15,7 @@ pub fn run() {
             commands::get_gmail_oauth,
             commands::get_mail_content,
             commands::get_envelopes,
+            commands::send_email,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -7,6 +7,7 @@ use std::{
 };
 
 use imap::Error as ImapError;
+use lettre::transport::smtp::Error as SmtpError;
 use oauth2::reqwest::Error as ReqwestError;
 use oauth2::{url::ParseError as UrlParseError, ErrorResponse, RequestTokenError};
 use serde::{ser::SerializeStruct, Serialize};
@@ -93,6 +94,12 @@ impl From<String> for Error {
     }
 }
 
+impl From<SmtpError> for Error {
+    fn from(smtp_error: SmtpError) -> Self {
+        Error::new(ErrorKind::Smtp(smtp_error), "SMTP error")
+    }
+}
+
 impl Serialize for Error {
     fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
     where
@@ -116,6 +123,8 @@ impl StdError for Error {
             ErrorKind::UrlParse(e) => Some(e),
             ErrorKind::Imap(e) => Some(e),
             ErrorKind::Utf8(e) => Some(e),
+            ErrorKind::Smtp(e) => Some(e),
+            ErrorKind::RequestTokenError => None,
             ErrorKind::Generic(_e) => None,
             _ => None,
         }
@@ -134,6 +143,7 @@ pub enum ErrorKind {
     UrlParse(UrlParseError),
     Imap(ImapError),
     Utf8(Utf8Error),
+    Smtp(SmtpError),
     RequestTokenError,
     Generic(String),
 }

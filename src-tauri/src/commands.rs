@@ -1,5 +1,8 @@
 use crate::auth::{init_google_oauth_flow, GmailOAuth2};
 use crate::error::{Error, ErrorKind, Result};
+use lettre::transport::smtp::authentication::Mechanism;
+use lettre::transport::smtp::response::Code;
+use lettre::{message::header::ContentType, Message, SmtpTransport, Transport};
 use serde::{Deserialize, Serialize};
 use std::str::from_utf8;
 use tauri::Manager;
@@ -141,4 +144,34 @@ pub fn get_envelopes(handle: tauri::AppHandle) -> Result<Vec<Envelope>> {
     // Logout
     imap_session.logout()?;
     Ok(envelopes)
+}
+
+#[tauri::command]
+pub fn send_email(handle: tauri::AppHandle, to: &str, subject: &str, body: &str) -> Result<String> {
+    let auth = handle.state::<GmailOAuth2>();
+    let domain = "smtp.gmail.com";
+
+    let email = Message::builder()
+        .from(
+            auth.inner()
+                .user
+                .parse()
+                .expect("Failed to parse sender email"),
+        )
+        .to(to
+            .parse()
+            .expect(format!("Failed to parse recipient email: {}", to).as_str()))
+        .subject(subject)
+        .header(ContentType::TEXT_PLAIN)
+        .body(body.to_string())
+        .map_err(|e| Error::new(ErrorKind::Generic(e.to_string()), "Failed to create email"))?;
+
+    let mailer = SmtpTransport::relay(domain)
+        .expect("Failed to create SMTP transport")
+        .authentication(vec![Mechanism::Xoauth2])
+        .credentials(auth.inner().clone().into())
+        .build();
+
+    let result = mailer.send(&email)?;
+    Ok(result.code().to_string())
 }

@@ -3,6 +3,7 @@ use axum::extract::Query;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Extension, Router};
+use lettre::transport::smtp::authentication::Credentials;
 use oauth2::basic::{BasicErrorResponseType, BasicTokenType};
 use oauth2::{
     basic::BasicClient, reqwest, AuthUrl, AuthorizationCode, ClientId, CsrfToken, RedirectUrl,
@@ -32,7 +33,7 @@ use crate::{
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct GmailOAuth2 {
-    user: String,
+    pub user: String,
     access_token: String,
 }
 
@@ -44,6 +45,12 @@ impl imap::Authenticator for GmailOAuth2 {
             "user={}\x01auth=Bearer {}\x01\x01",
             self.user, self.access_token
         );
+    }
+}
+
+impl Into<Credentials> for GmailOAuth2 {
+    fn into(self) -> Credentials {
+        Credentials::new(self.user, self.access_token)
     }
 }
 
