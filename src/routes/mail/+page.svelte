@@ -10,10 +10,11 @@
   }
 
   type Envelope = {
-    date: String
-    subject: String
-    from: String
-    to: String
+    uid: number
+    date: string
+    subject: string
+    from: string
+    to: string
   }
 
   let gmailOauth: Promise<GmailOauth> | null = $state(null)
@@ -22,7 +23,12 @@
 
   gmailOauth = invoke('get_gmail_oauth')
   firstMessage = invoke('get_mail_content')
-  envelopes = invoke('get_envelopes')
+  envelopes = invoke<Envelope[]>('get_envelopes').then(
+    (envelopes: Envelope[]) =>
+      envelopes.toSorted(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      )
+  )
 </script>
 
 <Resizable.PaneGroup direction="horizontal">
@@ -48,10 +54,14 @@
         {:then awaited}
           {#each awaited as envelope}
             <MailEnvelope
+              uid={envelope.uid}
               date={envelope.date}
               subject={envelope.subject}
               from={envelope.from}
               to={envelope.to}
+              onselect={(uid: number) => {
+                firstMessage = invoke('get_mail_content', { uid })
+              }}
             />
           {/each}
         {:catch error}

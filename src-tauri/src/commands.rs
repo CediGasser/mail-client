@@ -17,7 +17,7 @@ pub async fn get_gmail_oauth(handle: tauri::AppHandle) -> Result<GmailOAuth2> {
 }
 
 #[tauri::command]
-pub async fn get_mail_content(handle: tauri::AppHandle) -> Result<String> {
+pub async fn get_mail_content(handle: tauri::AppHandle, uid: u32) -> Result<String> {
     let auth = handle.state::<GmailOAuth2>();
 
     let domain = "imap.gmail.com";
@@ -38,7 +38,7 @@ pub async fn get_mail_content(handle: tauri::AppHandle) -> Result<String> {
 
     // fetch message number 1 in this mailbox, along with its RFC822 field.
     // RFC 822 dictates the format of the body of e-mails
-    let messages = imap_session.fetch("1", "RFC822")?;
+    let messages = imap_session.uid_fetch(uid.to_string(), "RFC822")?;
     let message = if let Some(m) = messages.iter().next() {
         m
     } else {
@@ -60,6 +60,7 @@ pub async fn get_mail_content(handle: tauri::AppHandle) -> Result<String> {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Envelope {
+    uid: u32,
     date: String,
     subject: String,
     from: String,
@@ -93,6 +94,7 @@ pub fn get_envelopes(handle: tauri::AppHandle) -> Result<Vec<Envelope>> {
     for message in messages.iter() {
         if let Some(envelope) = message.envelope() {
             let envelope_data = Envelope {
+                uid: message.uid.unwrap_or_default(),
                 date: envelope
                     .date
                     .map(|s| from_utf8(s).unwrap())

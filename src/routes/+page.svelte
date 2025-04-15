@@ -4,7 +4,6 @@
   import * as Card from '$lib/components/ui/card'
   import LoadingSpinner from '$lib/components/custom/LoadingSpinner.svelte'
 
-  let mail = $state('')
   let isLoading = $state(false)
   let mailConfig: Promise<string> | null = $state(null)
 
