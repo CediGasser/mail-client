@@ -1,8 +1,8 @@
 use crate::auth::{init_google_oauth_flow, GmailOAuth2};
 use crate::error::{Error, ErrorKind, Result};
 use lettre::transport::smtp::authentication::Mechanism;
-use lettre::transport::smtp::response::Code;
 use lettre::{message::header::ContentType, Message, SmtpTransport, Transport};
+use mail_parser::MessageParser;
 use serde::{Deserialize, Serialize};
 use std::str::from_utf8;
 use tauri::Manager;
@@ -52,8 +52,18 @@ pub async fn get_mail_content(handle: tauri::AppHandle, uid: u32) -> Result<Stri
     };
 
     // extract the message's body
-    let body = message.body().expect("message did not have a body!");
-    let body = std::str::from_utf8(body)?.to_string();
+    let body = message
+        .body()
+        .ok_or(Error::from("No body found".to_string()))?;
+    let body = MessageParser::default()
+        .parse(body)
+        .ok_or(Error::from("Could not parse email message".to_string()))?;
+    let body = body
+        .body_html(0)
+        .ok_or(Error::from(
+            "Could not get text content of root part".to_string(),
+        ))?
+        .to_string();
 
     // be nice to the server and log out
     imap_session.logout()?;

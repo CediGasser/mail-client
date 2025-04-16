@@ -124,7 +124,6 @@ impl StdError for Error {
             ErrorKind::Imap(e) => Some(e),
             ErrorKind::Utf8(e) => Some(e),
             ErrorKind::Smtp(e) => Some(e),
-            ErrorKind::RequestTokenError => None,
             ErrorKind::Generic(_e) => None,
             _ => None,
         }

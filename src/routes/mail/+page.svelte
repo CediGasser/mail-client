@@ -81,7 +81,7 @@
       {#await firstMessage}
         <LoadingSpinner />
       {:then awaited}
-        <span>{awaited}</span>
+        <span>{@html awaited}</span>
       {:catch error}
         <span class="error-msg">Error: {error.message}</span>
       {/await}
