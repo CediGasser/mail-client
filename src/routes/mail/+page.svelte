@@ -69,7 +69,12 @@
             <LoadingSpinner />
           </div>
         {:then awaited}
-          <span>{@html awaited}</span>
+          <iframe
+            class="w-full h-full"
+            title="Email message"
+            sandbox="allow-same-origin"
+            srcdoc={awaited}
+          ></iframe>
         {:catch error}
           <span class="error-msg">Error: {error.message}</span>
         {/await}
