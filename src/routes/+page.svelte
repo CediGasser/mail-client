@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button'
   import * as Card from '$lib/components/ui/card'
   import LoadingSpinner from '$lib/components/custom/LoadingSpinner.svelte'
+  import Google from '$lib/components/custom/Google.svelte'
 
   let isLoading = $state(false)
   let mailConfig: Promise<string> | null = $state(null)
@@ -36,6 +37,7 @@
       </Card.Header>
       <Card.Content class="grid gap-4">
         <Button variant="outline" onclick={handleLoginWithGoogle}>
+          <Google />
           Google
         </Button>
       </Card.Content>

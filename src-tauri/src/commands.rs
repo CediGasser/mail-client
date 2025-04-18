@@ -77,7 +77,8 @@ pub struct Envelope {
     date: String,
     subject: String,
     from: String,
-    to: String,
+    read: bool,
+    starred: bool,
 }
 
 #[tauri::command]
@@ -132,20 +133,8 @@ pub fn get_envelopes(handle: tauri::AppHandle) -> Result<Vec<Envelope>> {
                     })
                     .unwrap_or_default()
                     .join(", "),
-                to: envelope
-                    .to
-                    .as_ref()
-                    .map(|t| {
-                        t.iter()
-                            .map(|a| {
-                                from_utf8(a.name.unwrap_or_default())
-                                    .unwrap_or_default()
-                                    .to_string()
-                            })
-                            .collect::<Vec<_>>()
-                    })
-                    .unwrap_or_default()
-                    .join(", "),
+                read: message.flags().contains(&imap::types::Flag::Seen),
+                starred: message.flags().contains(&imap::types::Flag::Flagged),
             };
             envelopes.push(envelope_data);
         }
