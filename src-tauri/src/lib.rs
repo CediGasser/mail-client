@@ -16,6 +16,7 @@ pub fn run() {
             commands::get_mail_content,
             commands::get_envelopes,
             commands::send_email,
+            commands::get_mailboxes,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

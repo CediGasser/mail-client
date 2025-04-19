@@ -20,7 +20,7 @@ pub async fn get_gmail_oauth(handle: tauri::AppHandle) -> Result<GmailOAuth2> {
 }
 
 #[tauri::command]
-pub async fn get_mail_content(handle: tauri::AppHandle, uid: u32) -> Result<String> {
+pub async fn get_mail_content(handle: tauri::AppHandle, mailbox: &str, uid: u32) -> Result<String> {
     let auth = handle.state::<GmailOAuth2>();
 
     let domain = "imap.gmail.com";
@@ -37,7 +37,7 @@ pub async fn get_mail_content(handle: tauri::AppHandle, uid: u32) -> Result<Stri
         .map_err(|e| e.0)?;
 
     // we want to fetch the first email in the INBOX mailbox
-    imap_session.select("INBOX")?;
+    imap_session.select(mailbox)?;
 
     // fetch message number 1 in this mailbox, along with its RFC822 field.
     // RFC 822 dictates the format of the body of e-mails
@@ -82,7 +82,7 @@ pub struct Envelope {
 }
 
 #[tauri::command]
-pub fn get_envelopes(handle: tauri::AppHandle) -> Result<Vec<Envelope>> {
+pub fn get_envelopes(handle: tauri::AppHandle, mailbox: &str) -> Result<Vec<Envelope>> {
     let auth = handle.state::<GmailOAuth2>();
 
     let domain = "imap.gmail.com";
@@ -99,7 +99,7 @@ pub fn get_envelopes(handle: tauri::AppHandle) -> Result<Vec<Envelope>> {
         .map_err(|e| e.0)?;
 
     // we want to fetch the first email in the INBOX mailbox
-    imap_session.select("INBOX")?;
+    imap_session.select(mailbox)?;
 
     let parser = MessageParser::new();
 
@@ -166,4 +166,30 @@ pub fn send_email(handle: tauri::AppHandle, to: &str, subject: &str, body: &str)
 
     let result = mailer.send(&email)?;
     Ok(result.code().to_string())
+}
+
+#[tauri::command]
+pub fn get_mailboxes(handle: tauri::AppHandle) -> Result<Vec<String>> {
+    let auth = handle.state::<GmailOAuth2>();
+
+    let domain = "imap.gmail.com";
+    let tls = native_tls::TlsConnector::builder().build().unwrap();
+
+    // we pass in the domain twice to check that the server's TLS
+    // certificate is valid for the domain we're connecting to.
+    let client = imap::connect((domain, 993), domain, &tls).unwrap();
+
+    // the client we have here is unauthenticated.
+    // to do anything useful with the e-mails, we need to log in
+    let mut imap_session = client
+        .authenticate("XOAUTH2", auth.inner())
+        .map_err(|e| e.0)?;
+
+    // get mailboxes
+    let mailboxes = imap_session.list(None, Some("*"))?;
+
+    // Logout
+    imap_session.logout()?;
+
+    Ok(mailboxes.iter().map(|m| m.name().to_string()).collect())
 }
