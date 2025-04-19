@@ -4,7 +4,7 @@ use lettre::transport::smtp::authentication::Mechanism;
 use lettre::{message::header::ContentType, Message, SmtpTransport, Transport};
 use mail_parser::MessageParser;
 use serde::{Deserialize, Serialize};
-use std::str::from_utf8;
+use std::fmt::Debug;
 use tauri::Manager;
 
 #[tauri::command]
@@ -73,10 +73,10 @@ pub async fn get_mail_content(handle: tauri::AppHandle, uid: u32) -> Result<Stri
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Envelope {
-    uid: u32,
-    date: String,
-    subject: String,
-    from: String,
+    uid: Option<u32>,
+    date: Option<String>,
+    from: Option<String>,
+    subject: Option<String>,
     read: bool,
     starred: bool,
 }
@@ -101,42 +101,35 @@ pub fn get_envelopes(handle: tauri::AppHandle) -> Result<Vec<Envelope>> {
     // we want to fetch the first email in the INBOX mailbox
     imap_session.select("INBOX")?;
 
+    let parser = MessageParser::new();
+
     // fetch message number 1 in this mailbox, along with its RFC822 field.
     // RFC 822 dictates the format of the body of e-mails
-    let messages = imap_session.uid_fetch("1:*", "ALL")?;
+    let responses = imap_session.uid_fetch("1:*", "(UID FLAGS RFC822.HEADER)")?;
     let mut envelopes = Vec::new();
-    for message in messages.iter() {
-        if let Some(envelope) = message.envelope() {
-            let envelope_data = Envelope {
-                uid: message.uid.unwrap_or_default(),
-                date: envelope
-                    .date
-                    .map(|s| from_utf8(s).unwrap())
-                    .unwrap_or("(no subject)")
-                    .to_string(),
-                subject: envelope
-                    .subject
-                    .map(|s| from_utf8(s).unwrap())
-                    .unwrap_or("(no subject)")
-                    .to_string(),
-                from: envelope
-                    .from
-                    .as_ref()
-                    .map(|f| {
-                        f.iter()
-                            .map(|a| {
-                                from_utf8(a.name.unwrap_or_default())
-                                    .unwrap_or_default()
-                                    .to_string()
-                            })
-                            .collect::<Vec<_>>()
-                    })
-                    .unwrap_or_default()
-                    .join(", "),
-                read: message.flags().contains(&imap::types::Flag::Seen),
-                starred: message.flags().contains(&imap::types::Flag::Flagged),
+    for response in responses.iter() {
+        let header_bytes = response.header().expect("Failed to get header bytes");
+
+        if let Some(message) = parser.parse(header_bytes) {
+            let uid = response.uid;
+            let date = message.date().map(|d| d.to_string());
+            let from = message
+                .from()
+                .map(|f| f.first().unwrap().name().map(|n| n.to_string()))
+                .flatten();
+            let subject = message.subject().map(|s| s.to_string());
+            let read = response.flags().contains(&imap::types::Flag::Seen);
+            let starred = response.flags().contains(&imap::types::Flag::Flagged);
+
+            let envelope = Envelope {
+                uid: uid,
+                date: date,
+                from: from,
+                subject: subject,
+                read: read,
+                starred: starred,
             };
-            envelopes.push(envelope_data);
+            envelopes.push(envelope);
         }
     }
 
