@@ -10,3 +10,7 @@ pub const GOOGLE_PROFILE_SCOPE: &str = "https://www.googleapis.com/auth/userinfo
 pub const GOOGLE_PROFILE_MAIL_SCOPE: &str = "email";
 
 pub const GOOGLE_PROFILE_API: &str = "https://www.googleapis.com/oauth2/v3/userinfo";
+
+pub const GOOGLE_IMAP_HOST: &str = "imap.gmail.com";
+pub const GOOGLE_IMAP_PORT: u16 = 993;
+pub const GOOGLE_SMTP_HOST: &str = "smtp.gmail.com";

@@ -14,14 +14,16 @@ use oauth2::{
     PkceCodeVerifier, RevocationErrorResponseType, StandardErrorResponse, StandardRevocableToken,
     StandardTokenIntrospectionResponse, StandardTokenResponse,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::net::{SocketAddr, TcpListener};
 use std::sync::Arc;
 use tauri::async_runtime::JoinHandle;
+use tauri::async_runtime::Mutex;
 use tauri::Manager;
 use tauri_plugin_opener::open_url;
 
 use crate::util::navigate;
+use crate::AppState;
 use crate::{
     constants::{
         GOOGLE_AUTH_URI, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_MAIL_SCOPE,
@@ -31,26 +33,34 @@ use crate::{
     error::Error,
 };
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct GmailOAuth2 {
-    pub user: String,
+    user: String,
     access_token: String,
 }
 
-impl imap::Authenticator for GmailOAuth2 {
-    type Response = String;
-    #[allow(unused_variables)]
-    fn process(&self, data: &[u8]) -> Self::Response {
-        return format!(
-            "user={}\x01auth=Bearer {}\x01\x01",
-            self.user, self.access_token
-        );
+impl GmailOAuth2 {
+    pub fn user(&self) -> &str {
+        &self.user
+    }
+    pub fn access_token(&self) -> &str {
+        &self.access_token
     }
 }
 
-impl Into<Credentials> for GmailOAuth2 {
+impl imap::Authenticator for &GmailOAuth2 {
+    type Response = String;
+
+    fn process(&self, _data: &[u8]) -> Self::Response {
+        format!(
+            "user={}\x01auth=Bearer {}\x01\x01",
+            self.user, self.access_token
+        )
+    }
+}
+
+impl Into<Credentials> for &GmailOAuth2 {
     fn into(self) -> Credentials {
-        Credentials::new(self.user, self.access_token)
+        Credentials::new(self.user.clone(), self.access_token.clone())
     }
 }
 
@@ -68,7 +78,7 @@ type OAuthClient = Client<
 >;
 
 #[derive(Clone)]
-struct AuthState {
+struct OAuthState {
     csrf_token: CsrfToken,
     pkce: Arc<(PkceCodeChallenge, String)>,
     client: Arc<OAuthClient>,
@@ -106,7 +116,7 @@ pub async fn init_google_oauth_flow(handle: tauri::AppHandle) -> Result<(), Erro
     let socket_addr = get_available_addr(); // or any other port
     let redirect_url = format!("http://{socket_addr}/callback").to_string();
 
-    let auth = AuthState {
+    let auth = OAuthState {
         csrf_token: CsrfToken::new_random(),
         pkce: Arc::new((
             pkce_code_challenge,
@@ -118,7 +128,7 @@ pub async fn init_google_oauth_flow(handle: tauri::AppHandle) -> Result<(), Erro
 
     handle.manage(auth);
 
-    let auth_clone = handle.state::<AuthState>().clone();
+    let auth_clone = handle.state::<OAuthState>().clone();
 
     let scopes: Vec<oauth2::Scope> = vec![
         oauth2::Scope::new(GOOGLE_MAIL_SCOPE.to_string()),
@@ -169,9 +179,9 @@ async fn authorize(
     handle: Extension<tauri::AppHandle>,
     query: Query<CallbackQuery>,
 ) -> impl IntoResponse {
-    let auth = handle.state::<AuthState>();
+    let oauth_state = handle.state::<OAuthState>();
 
-    if query.state.secret() != auth.csrf_token.secret() {
+    if query.state.secret() != oauth_state.csrf_token.secret() {
         return "Not authorized".to_string();
     }
 
@@ -183,10 +193,10 @@ async fn authorize(
     println!("Received authorization code: {}", query.code.secret());
 
     // Exchange the authorization code for an access token
-    let token = auth
+    let token = oauth_state
         .client
         .exchange_code(query.code.clone())
-        .set_pkce_verifier(PkceCodeVerifier::new(auth.pkce.1.clone()))
+        .set_pkce_verifier(PkceCodeVerifier::new(oauth_state.pkce.1.clone()))
         .request_async(&http_client)
         .await;
 
@@ -218,9 +228,17 @@ async fn authorize(
         access_token: access_token.clone(),
     };
 
-    println!("User: {:?}", user);
+    let app_state = Mutex::new(AppState {
+        imap_session: None,
+        auth: gmail_oauth2,
+    });
 
-    handle.manage(gmail_oauth2);
+    // Store the GmailOAuth2 object in the app state
+    let could_manage = handle.manage(app_state);
+
+    if !could_manage {
+        return "Failed to manage app state".to_string();
+    }
 
     // Signal the server to shut down
     let server_handle = handle.try_state::<JoinHandle<Result<(), axum::Error>>>();
@@ -247,7 +265,7 @@ async fn run_server(handle: &tauri::AppHandle) -> Result<(), axum::Error> {
         .route("/callback", get(authorize))
         .layer(Extension(handle.clone()));
 
-    let _ = axum::Server::bind(&handle.state::<AuthState>().socket_addr.clone())
+    let _ = axum::Server::bind(&handle.state::<OAuthState>().socket_addr.clone())
         .serve(app.into_make_service())
         .await;
 

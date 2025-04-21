@@ -6,7 +6,7 @@ use std::{
     str::Utf8Error,
 };
 
-use imap::Error as ImapError;
+use imap::error::Error as ImapError;
 use lettre::transport::smtp::Error as SmtpError;
 use oauth2::reqwest::Error as ReqwestError;
 use oauth2::{url::ParseError as UrlParseError, ErrorResponse, RequestTokenError};

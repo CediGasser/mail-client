@@ -7,15 +7,10 @@
   import EnvelopeList from './EnvelopeList.svelte'
   import MailboxList from './MailboxList.svelte'
 
-  type GmailOauth = {
-    user: string
-    access_token: string
-  }
-
   let selectedMailbox: string = $state('INBOX')
   let selectedMailUid: number = $state(0)
 
-  let gmailOauth: Promise<GmailOauth> = invoke('get_gmail_oauth')
+  let user: Promise<string> = invoke('get_user')
   let mailboxesRequest: Promise<string[]> | null =
     invoke<string[]>('get_mailboxes')
 
@@ -51,10 +46,10 @@
       defaultSize={20}
       class="border-r border-gray-200"
     >
-      {#await gmailOauth}
+      {#await user}
         <span>Loading user...</span>
       {:then awaited}
-        <h1 class="text-xl font-bold">{awaited.user}</h1>
+        <h1 class="text-xl font-bold">{awaited}</h1>
       {:catch error}
         <span>Error: {error.message}</span>
       {/await}
