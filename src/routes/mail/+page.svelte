@@ -3,26 +3,25 @@
   import * as Resizable from '$lib/components/ui/resizable/index'
   import LoadingSpinner from '$lib/components/custom/LoadingSpinner.svelte'
   import Button from '$lib/components/ui/button/button.svelte'
-  import type { Envelope } from '$lib/types'
+  import type { Envelope, Mailbox } from '$lib/types'
   import EnvelopeList from './EnvelopeList.svelte'
   import MailboxList from './MailboxList.svelte'
 
-  let selectedMailbox: string = $state('INBOX')
+  let selectedMailbox: Mailbox | null = $state(null)
   let selectedMailUid: number = $state(0)
 
   let user: Promise<string> = invoke('get_user')
-  let mailboxesRequest: Promise<string[]> | null =
-    invoke<string[]>('get_mailboxes')
+  let mailboxesRequest: Promise<Mailbox[]> = invoke<Mailbox[]>('get_mailboxes')
 
   let messageRequest: Promise<string> = $derived.by(() => {
     return invoke('get_mail_content', {
-      mailbox: selectedMailbox,
+      mailbox: selectedMailbox?.name ?? 'INBOX',
       uid: selectedMailUid,
     })
   })
   let envelopesRequest: Promise<Envelope[]> = $derived.by(() => {
     return invoke<Envelope[]>('get_envelopes', {
-      mailbox: selectedMailbox,
+      mailbox: selectedMailbox?.name ?? 'INBOX',
     }).then((envelopes: Envelope[]) =>
       envelopes.toSorted(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -30,7 +29,7 @@
     )
   })
 
-  const handleSelectMailbox = (mailbox: string) => {
+  const handleSelectMailbox = (mailbox: Mailbox) => {
     selectedMailbox = mailbox
   }
 
@@ -65,7 +64,7 @@
     </Resizable.Pane>
     <Resizable.Handle />
     <Resizable.Pane minSize={20} defaultSize={30}>
-      <h2 class="text-sm">{selectedMailbox}</h2>
+      <h2 class="text-sm">{selectedMailbox?.name}</h2>
       {#await envelopesRequest}
         <div class="h-full flex items-center justify-center">
           <LoadingSpinner />

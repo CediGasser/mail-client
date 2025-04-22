@@ -1,6 +1,6 @@
 use crate::auth::init_google_oauth_flow;
 use crate::constants::GOOGLE_SMTP_HOST;
-use crate::email::{self, Envelope};
+use crate::email::{self, Envelope, Mailbox};
 use crate::error::{Error, ErrorKind, Result};
 use crate::AppState;
 use lettre::transport::smtp::authentication::Mechanism;
@@ -21,7 +21,7 @@ pub async fn get_user() -> Result<String> {
 }
 
 #[tauri::command]
-pub async fn get_mailboxes(handle: tauri::AppHandle) -> Result<Vec<String>> {
+pub async fn get_mailboxes(handle: tauri::AppHandle) -> Result<Vec<Mailbox>> {
     let app_state_mutex = handle.state::<Mutex<AppState>>();
     let mut app_state = app_state_mutex.lock().await;
     let imap_session = app_state.get_imap_session().await?;

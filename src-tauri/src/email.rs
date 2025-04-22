@@ -2,7 +2,7 @@ use crate::error::{Error, Result};
 
 use std::net::TcpStream;
 
-use imap::types::Flag;
+use imap::types::{Flag, NameAttribute};
 use imap::Authenticator;
 use mail_parser::MessageParser;
 use native_tls::TlsStream;
@@ -22,6 +22,13 @@ pub struct Envelope {
     starred: bool,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Mailbox {
+    name: String,
+    delimiter: String,
+    attributes: Vec<String>,
+}
+
 /// Get the list of mailboxes
 ///
 /// # Arguments
@@ -29,13 +36,32 @@ pub struct Envelope {
 /// # Returns
 /// * `Result<Vec<String>>` - The list of mailboxes
 ///
-pub fn get_mailboxes(session: &mut Session) -> Result<Vec<String>> {
+pub fn get_mailboxes(session: &mut Session) -> Result<Vec<Mailbox>> {
     let responses = session.list(None, Some("*"))?;
 
     let mailbox_names = responses
         .iter()
-        .map(|mailbox| mailbox.name().to_string())
-        .collect::<Vec<String>>();
+        .map(|mailbox| {
+            let name = mailbox.name();
+            let delimiter = mailbox.delimiter();
+            let attributes = mailbox
+                .attributes()
+                .iter()
+                .map(|a| match a {
+                    NameAttribute::Marked => "Marked".to_string(),
+                    NameAttribute::Unmarked => "Unmarked".to_string(),
+                    NameAttribute::NoInferiors => "NoInferiors".to_string(),
+                    NameAttribute::NoSelect => "NoSelect".to_string(),
+                    NameAttribute::Custom(s) => s.to_string(),
+                })
+                .collect();
+            Mailbox {
+                name: name.to_string(),
+                delimiter: delimiter.unwrap_or_default().to_string(),
+                attributes: attributes,
+            }
+        })
+        .collect::<Vec<Mailbox>>();
 
     Ok(mailbox_names)
 }

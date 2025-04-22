@@ -1,3 +1,9 @@
+export type Mailbox = {
+  name: string
+  delimiter: string
+  attributes: string[]
+}
+
 export type Envelope = {
   uid: number
   from: string

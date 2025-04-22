@@ -1,31 +1,33 @@
 <script lang="ts">
+  import type { Mailbox } from '$lib/types'
+  import MailboxComponent from './Mailbox.svelte'
+
   interface Props {
-    items: string[]
-    onselect?: (mailbox: string) => void
+    items: Mailbox[]
+    onselect?: (mailbox: Mailbox) => void
   }
 
   let { items, onselect }: Props = $props()
+
+  let selectedMailbox: string = $state('INBOX')
+  let filteredMailboxes: Mailbox[] = $derived(
+    items.filter((mailbox) => !mailbox.attributes.includes('NoSelect'))
+  )
+
+  const handleSelectMailbox = (mailbox: Mailbox) => {
+    selectedMailbox = mailbox.name
+    onselect?.(mailbox)
+  }
 </script>
 
 <main class="h-full">
   <div class="flex flex-col">
-    {#each items as item}
-      <button
-        class="p-2 border-t border-gray-200 hover:bg-gray-100 cursor-pointer"
-        onclick={() => {
-          onselect?.(item)
-        }}
-        onkeydown={(e) => {
-          if (e.key === 'Enter') {
-            onselect?.(item)
-          }
-        }}
-        onfocus={(e) => {
-          e.currentTarget.classList.add('outline-none')
-        }}
-      >
-        <h2 class="text-lg font-semibold text-start">{item}</h2>
-      </button>
+    {#each filteredMailboxes as mailbox}
+      <MailboxComponent
+        {...mailbox}
+        onselect={handleSelectMailbox}
+        selected={selectedMailbox === mailbox.name}
+      />
     {/each}
   </div>
 </main>
