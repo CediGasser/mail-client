@@ -7,6 +7,7 @@ use std::{
 };
 
 use imap::error::Error as ImapError;
+use keyring::Error as KeyringError;
 use lettre::transport::smtp::Error as SmtpError;
 use oauth2::reqwest::Error as ReqwestError;
 use oauth2::{url::ParseError as UrlParseError, ErrorResponse, RequestTokenError};
@@ -29,6 +30,15 @@ impl Error {
 
     pub fn kind(&self) -> &ErrorKind {
         &self.kind
+    }
+}
+
+impl From<KeyringError> for Error {
+    fn from(keyring_error: KeyringError) -> Self {
+        Error::new(
+            ErrorKind::Keyring(keyring_error),
+            "Failed to access keyring",
+        )
     }
 }
 
@@ -124,6 +134,7 @@ impl StdError for Error {
             ErrorKind::Imap(e) => Some(e),
             ErrorKind::Utf8(e) => Some(e),
             ErrorKind::Smtp(e) => Some(e),
+            ErrorKind::Keyring(e) => Some(e),
             ErrorKind::Generic(_e) => None,
             _ => None,
         }
@@ -143,6 +154,7 @@ pub enum ErrorKind {
     Imap(ImapError),
     Utf8(Utf8Error),
     Smtp(SmtpError),
+    Keyring(KeyringError),
     RequestTokenError,
     Generic(String),
 }

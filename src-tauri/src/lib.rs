@@ -1,6 +1,7 @@
 use email::Session;
 
 mod auth;
+mod auth_store;
 mod commands;
 mod constants;
 mod email;

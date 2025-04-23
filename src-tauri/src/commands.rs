@@ -9,8 +9,8 @@ use tauri::async_runtime::Mutex;
 use tauri::Manager;
 
 #[tauri::command]
-pub async fn login_with_google(handle: tauri::AppHandle) -> Result<()> {
-    init_google_oauth_flow(handle).await
+pub async fn login_with_google(handle: tauri::AppHandle, user: &str) -> Result<()> {
+    init_google_oauth_flow(handle, user).await
 }
 
 #[tauri::command]

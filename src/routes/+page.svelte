@@ -4,14 +4,15 @@
   import * as Card from '$lib/components/ui/card'
   import LoadingSpinner from '$lib/components/custom/LoadingSpinner.svelte'
   import Google from '$lib/components/custom/Google.svelte'
+  import Input from '$lib/components/ui/input/input.svelte'
 
   let isLoading = $state(false)
-  let mailConfig: Promise<string> | null = $state(null)
+  let email: string = $state('')
 
   const handleLoginWithGoogle = async (event: Event) => {
     isLoading = true
-    mailConfig = invoke('login_with_google')
-    mailConfig.then(() => (isLoading = false))
+    await invoke('login_with_google', { user: email })
+    isLoading = false
   }
 </script>
 
@@ -36,6 +37,18 @@
         </Card.Description>
       </Card.Header>
       <Card.Content class="grid gap-4">
+        <Input
+          bind:value={email}
+          type="text"
+          placeholder="Email"
+          class="w-full"
+          disabled={isLoading}
+          onkeydown={(e) => {
+            if (e.key === 'Enter') {
+              handleLoginWithGoogle(e)
+            }
+          }}
+        />
         <Button variant="outline" onclick={handleLoginWithGoogle}>
           <Google />
           Google
