@@ -1,12 +1,13 @@
 <script lang="ts">
   import type { Mailbox } from '$lib/types'
 
-  interface Props extends Mailbox {
+  interface Props {
+    mailbox: Mailbox
     onselect?: (mailbox: Mailbox) => void
     selected?: boolean
   }
 
-  let { onselect, selected, ...mailbox }: Props = $props()
+  let { onselect, selected, mailbox }: Props = $props()
 
   let displayName: string = $derived(mailbox.name.replace('[Gmail]/', ''))
 </script>

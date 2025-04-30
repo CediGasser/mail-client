@@ -1,6 +1,6 @@
 use crate::error::{Error, Result};
-
 use std::net::TcpStream;
+use utf7_imap::decode_utf7_imap;
 
 use imap::types::{Flag, NameAttribute};
 use imap::Authenticator;
@@ -42,7 +42,7 @@ pub fn get_mailboxes(session: &mut Session) -> Result<Vec<Mailbox>> {
     let mailbox_names = responses
         .iter()
         .map(|mailbox| {
-            let name = mailbox.name();
+            let name = decode_utf7_imap(mailbox.name().to_string());
             let delimiter = mailbox.delimiter();
             let attributes = mailbox
                 .attributes()
