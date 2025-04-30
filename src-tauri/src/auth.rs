@@ -10,7 +10,7 @@ use oauth2::{
     StandardRevocableToken, StandardTokenIntrospectionResponse, StandardTokenResponse,
     TokenResponse, TokenUrl,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{
     net::{SocketAddr, TcpListener},
     sync::Arc,
@@ -33,7 +33,7 @@ use crate::{
     AppState,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GmailOAuth2 {
     pub user: String,
     pub access_token: String,
@@ -195,6 +195,8 @@ pub async fn init_google_oauth_flow(handle: tauri::AppHandle, user: &str) -> Res
             navigate(window, "/mail");
             return Ok(());
         }
+    } else {
+        println!("No token found, starting OAuth flow");
     }
 
     let scopes: Vec<oauth2::Scope> = vec![
