@@ -3,8 +3,7 @@
   import Label from '$lib/components/ui/label/label.svelte'
   import Textarea from '$lib/components/ui/textarea/textarea.svelte'
   import { Button } from '$lib/components/ui/button'
-
-  import { invoke } from '@tauri-apps/api/core'
+  import { sendEmail } from '$lib/commands'
 
   let toEmail: string = $state('')
   let subject: string = $state('')
@@ -12,7 +11,7 @@
 
   const handleSendEmail = async () => {
     try {
-      await invoke('send_email', { to: toEmail, subject, body })
+      await sendEmail(toEmail, subject, body)
       alert('Email sent successfully!')
     } catch (error) {
       console.error('Error sending email:', error)
@@ -27,7 +26,7 @@
   }
 </script>
 
-<Button href="/mail" class="mb-4">Back to Inbox</Button>
+<Button href="/" class="mb-4">Back to Inbox</Button>
 
 <div class="flex flex-col gap-4">
   <Label for="to">To:</Label>

@@ -9,7 +9,9 @@
 
   let { onselect, selected, mailbox }: Props = $props()
 
-  let displayName: string = $derived(mailbox.name.replace('[Gmail]/', ''))
+  let displayName: string = $derived(
+    mailbox.display_name.replace('[Gmail]/', '')
+  )
 </script>
 
 <button

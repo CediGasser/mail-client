@@ -104,6 +104,12 @@ impl From<String> for Error {
     }
 }
 
+impl From<&str> for Error {
+    fn from(message: &str) -> Self {
+        Error::new(ErrorKind::Generic(message.to_string()), message)
+    }
+}
+
 impl From<SmtpError> for Error {
     fn from(smtp_error: SmtpError) -> Self {
         Error::new(ErrorKind::Smtp(smtp_error), "SMTP error")

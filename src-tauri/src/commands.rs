@@ -1,4 +1,5 @@
 use crate::auth::init_google_oauth_flow;
+use crate::config::{Account, AccountConfig};
 use crate::constants::GOOGLE_SMTP_HOST;
 use crate::email::{self, Envelope, Mailbox};
 use crate::error::{Error, ErrorKind, Result};
@@ -9,15 +10,42 @@ use tauri::async_runtime::Mutex;
 use tauri::Manager;
 
 #[tauri::command]
-pub async fn login_with_google(handle: tauri::AppHandle, user: &str) -> Result<()> {
-    init_google_oauth_flow(handle, user).await
+pub async fn login_with_google(handle: tauri::AppHandle, email: &str) -> Result<()> {
+    init_google_oauth_flow(handle, email).await
 }
 
 #[tauri::command]
-pub async fn get_user() -> Result<String> {
-    let user = "".to_string();
+pub async fn get_config(handle: tauri::AppHandle) -> Result<Vec<Account>> {
+    let account_config_mutex = handle.state::<Mutex<AccountConfig>>();
+    let account_config = account_config_mutex.lock().await;
 
-    Ok(user)
+    let config = account_config.accounts().to_vec();
+
+    Ok(config)
+}
+
+#[tauri::command]
+pub async fn config_add_account(handle: tauri::AppHandle, email: &str) -> Result<()> {
+    let account_config_mutex = handle.state::<Mutex<AccountConfig>>();
+    let mut account_config = account_config_mutex.lock().await;
+
+    account_config
+        .add_account(email.to_string())
+        .expect("Failed to add account");
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn config_remove_account(handle: tauri::AppHandle, email: &str) -> Result<()> {
+    let account_config_mutex = handle.state::<Mutex<AccountConfig>>();
+    let mut account_config = account_config_mutex.lock().await;
+
+    account_config
+        .remove_account(email)
+        .expect("Failed to remove account");
+
+    Ok(())
 }
 
 #[tauri::command]

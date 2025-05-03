@@ -23,6 +23,7 @@ use tauri_plugin_opener::open_url;
 
 use crate::{
     auth_store::{load_token_for, store_token},
+    config::AccountConfig,
     constants::{
         GOOGLE_AUTH_URI, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_MAIL_SCOPE,
         GOOGLE_PROFILE_API, GOOGLE_PROFILE_MAIL_SCOPE, GOOGLE_PROFILE_SCOPE, GOOGLE_REVOKATION_URI,
@@ -164,7 +165,7 @@ pub async fn init_google_oauth_flow(handle: tauri::AppHandle, user: &str) -> Res
             handle.manage(app_state);
             // Open the inbox in the tauri app
             let window = handle.get_webview_window("main").unwrap();
-            navigate(window, "/mail");
+            navigate(window, format!("/{}/INBOX", user).as_str());
             return Ok(());
         } else {
             // Token is expired, we need to refresh it
@@ -192,7 +193,7 @@ pub async fn init_google_oauth_flow(handle: tauri::AppHandle, user: &str) -> Res
             }
             // Open the inbox in the tauri app
             let window = handle.get_webview_window("main").unwrap();
-            navigate(window, "/mail");
+            navigate(window, format!("/{}/INBOX", user).as_str());
             return Ok(());
         }
     } else {
@@ -301,6 +302,24 @@ async fn authorize(
     // Store the token in the keyring
     store_token(gmail_oauth2.clone()).expect("Failed to store token");
 
+    let config_dir = handle
+        .path()
+        .app_config_dir()
+        .map(|p| p.to_string_lossy().into_owned())
+        .ok();
+    if config_dir.is_none() {
+        return "Failed to get config dir".to_string();
+    }
+
+    // Store the email in the Account Config
+    let config_mutex = handle.state::<Mutex<AccountConfig>>();
+    let mut config = config_mutex.lock().await;
+
+    // Add the email to the config if it doesn't exist
+    if let Err(e) = config.add_account(email.to_string()) {
+        println!("Failed to add account to config: {}", e);
+    }
+
     let app_state = Mutex::new(AppState {
         imap_session: None,
         auth: gmail_oauth2,
@@ -326,7 +345,7 @@ async fn authorize(
 
     // Open the inbox in the tauri app
     let window = handle.get_webview_window("main").unwrap();
-    navigate(window, "/mail");
+    navigate(window, format!("/{}/INBOX", email).as_str());
 
     "Login successful.
 You can close this window."

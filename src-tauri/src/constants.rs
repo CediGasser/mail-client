@@ -14,3 +14,5 @@ pub const GOOGLE_PROFILE_API: &str = "https://www.googleapis.com/oauth2/v3/useri
 pub const GOOGLE_IMAP_HOST: &str = "imap.gmail.com";
 pub const GOOGLE_IMAP_PORT: u16 = 993;
 pub const GOOGLE_SMTP_HOST: &str = "smtp.gmail.com";
+
+pub const CONFIG_FILE_NAME: &str = "account-config.json";

@@ -1,8 +1,13 @@
+use tauri::async_runtime::Mutex;
+
+use config::AccountConfig;
 use email::Session;
+use tauri::Manager;
 
 mod auth;
 mod auth_store;
 mod commands;
+mod config;
 mod constants;
 mod email;
 mod error;
@@ -37,13 +42,27 @@ pub fn run() {
     builder
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            commands::get_user,
+            commands::get_config,
+            commands::config_add_account,
+            commands::config_remove_account,
             commands::login_with_google,
             commands::get_mail_content,
             commands::get_envelopes,
             commands::send_email,
             commands::get_mailboxes,
         ])
+        .setup(|app| {
+            let config_path = app
+                .path()
+                .config_dir()
+                .unwrap()
+                .join(constants::CONFIG_FILE_NAME);
+            let config = AccountConfig::load(config_path).expect("Failed to load account config");
+
+            app.manage(Mutex::new(config));
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

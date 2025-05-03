@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { invoke } from '@tauri-apps/api/core'
   import { Button } from '$lib/components/ui/button'
   import * as Card from '$lib/components/ui/card'
   import LoadingSpinner from '$lib/components/custom/LoadingSpinner.svelte'
   import Google from '$lib/components/custom/Google.svelte'
   import Input from '$lib/components/ui/input/input.svelte'
+  import { loginWithGoogle } from '$lib/commands'
 
   let isLoading = $state(false)
   let email: string = $state('')
 
   const handleLoginWithGoogle = async (event: Event) => {
     isLoading = true
-    await invoke('login_with_google', { user: email })
+    await loginWithGoogle(email)
     isLoading = false
   }
 </script>

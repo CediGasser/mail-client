@@ -25,6 +25,7 @@ pub struct Envelope {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Mailbox {
     name: String,
+    display_name: String,
     delimiter: String,
     attributes: Vec<String>,
 }
@@ -42,7 +43,8 @@ pub fn get_mailboxes(session: &mut Session) -> Result<Vec<Mailbox>> {
     let mailbox_names = responses
         .iter()
         .map(|mailbox| {
-            let name = decode_utf7_imap(mailbox.name().to_string());
+            let name = mailbox.name().to_string();
+            let display_name = decode_utf7_imap(mailbox.name().to_string());
             let delimiter = mailbox.delimiter();
             let attributes = mailbox
                 .attributes()
@@ -55,8 +57,10 @@ pub fn get_mailboxes(session: &mut Session) -> Result<Vec<Mailbox>> {
                     NameAttribute::Custom(s) => s.to_string(),
                 })
                 .collect();
+
             Mailbox {
-                name: name.to_string(),
+                name: name,
+                display_name: display_name,
                 delimiter: delimiter.unwrap_or_default().to_string(),
                 attributes: attributes,
             }
