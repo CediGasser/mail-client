@@ -31,7 +31,7 @@
       <h1 class="text-2xl align-middle">Mail</h1>
       <Button variant="outline" class="mb-4" href="/mail/new">Compose</Button>
     </div>
-    <div class="mail h-dvh">
+    <div class="mail h-full">
       {#await data.message}
         <div class="h-full flex items-center justify-center">
           <LoadingSpinner />

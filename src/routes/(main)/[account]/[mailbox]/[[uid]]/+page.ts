@@ -2,7 +2,8 @@ import type { PageLoad } from './$types'
 import { getMailContent } from '$lib/commands'
 
 export const load: PageLoad = async ({ params }) => {
-  const { mailbox, uid } = params
+  const mailbox = decodeURIComponent(params.mailbox)
+  const uid = params.uid
 
   if (!uid) {
     return {

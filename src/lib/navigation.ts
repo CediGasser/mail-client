@@ -1,17 +1,18 @@
 import { goto } from '$app/navigation'
 import { page } from '$app/state'
 
-export async function navigateTo(
+export function getLinkTo(
   account: string | null,
   mailbox: string | null,
   messageUid: number | null
-) {
+): string {
+  mailbox = encodeURIComponent(mailbox || '')
+
   let path = page.url.pathname
   if (path.startsWith('/')) {
     // Remove the leading slash
     path = path.slice(1)
   }
-
   const [currentAccount, currentMailbox, currentMessageUid] = path.split('/')
 
   // If the account, mailbox, or messageUid is not provided, use the current ones
@@ -30,7 +31,17 @@ export async function navigateTo(
     uid = ''
   }
 
-  mailbox = encodeURIComponent(mailbox)
+  // Construct the link
+  const link = `/${account}/${mailbox}/${uid}`
+  return link
+}
 
-  await goto(`/${account}/${mailbox}/${uid}`)
+export async function navigateTo(
+  account: string | null,
+  mailbox: string | null,
+  messageUid: number | null
+) {
+  const link = await getLinkTo(account, mailbox, messageUid)
+  // Use the goto function to navigate to the new link
+  goto(link)
 }

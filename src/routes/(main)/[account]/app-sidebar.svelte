@@ -1,0 +1,44 @@
+<script lang="ts">
+  import * as Sidebar from '$lib/components/ui/sidebar/index.js'
+  import { getLinkTo } from '$lib/navigation'
+  import type { Mailbox } from '$lib/types'
+  import { formatMailbox } from '$lib/utils'
+
+  interface Props {
+    mailboxes: Mailbox[]
+    account: string
+  }
+  let { mailboxes, account }: Props = $props()
+
+  mailboxes = mailboxes.filter(
+    (mailbox) => !mailbox.attributes.includes('NoSelect')
+  )
+</script>
+
+<Sidebar.Root variant="inset" collapsible="icon">
+  <Sidebar.Header>
+    <Sidebar.Trigger />
+  </Sidebar.Header>
+  <Sidebar.Content>
+    <Sidebar.Group>
+      <Sidebar.GroupLabel>Mailboxes</Sidebar.GroupLabel>
+      <Sidebar.GroupContent>
+        <Sidebar.Menu>
+          {#each mailboxes.map(formatMailbox) as mailbox}
+            <Sidebar.MenuItem>
+              <Sidebar.MenuButton>
+                {#snippet child({ props })}
+                  <a href={getLinkTo(account, mailbox.name, null)} {...props}>
+                    <mailbox.icon></mailbox.icon>
+                    <span>{mailbox.display_name}</span>
+                  </a>
+                {/snippet}
+              </Sidebar.MenuButton>
+            </Sidebar.MenuItem>
+          {/each}
+        </Sidebar.Menu>
+      </Sidebar.GroupContent>
+    </Sidebar.Group>
+  </Sidebar.Content>
+  <Sidebar.Footer />
+</Sidebar.Root>

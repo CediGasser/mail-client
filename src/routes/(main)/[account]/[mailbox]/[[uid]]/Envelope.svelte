@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { getLinkTo } from '$lib/navigation'
   import type { Envelope } from '$lib/types'
   import Star from '@lucide/svelte/icons/star'
+  import { get } from 'svelte/store'
 
   interface Props extends Envelope {
     onselect?: (envelope: Envelope) => void
@@ -9,20 +11,13 @@
   let { onselect, selected, ...envelope }: Props = $props()
 </script>
 
-<button
+<a
   class="p-2 border-b {envelope.read
     ? 'border-gray-200'
     : 'border-l-4 border-l-blue-500'} {selected
     ? 'outline outline-2 outline-indigo-400'
     : ''} hover:bg-gray-100 cursor-pointer"
-  onclick={() => {
-    onselect?.(envelope)
-  }}
-  onkeydown={(e) => {
-    if (e.key === 'Enter') {
-      onselect?.(envelope)
-    }
-  }}
+  href={getLinkTo(null, null, envelope.uid)}
   onfocus={(e) => {
     e.currentTarget.classList.add('outline-none')
   }}
@@ -43,4 +38,4 @@
     </div>
   </div>
   <h2 class="text-lg font-semibold text-start">{envelope.subject}</h2>
-</button>
+</a>
