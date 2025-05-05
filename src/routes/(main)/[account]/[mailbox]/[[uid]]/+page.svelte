@@ -20,7 +20,7 @@
         <LoadingSpinner />
       </div>
     {:then envelopes}
-      <EnvelopeList items={envelopes} onselect={handleSelectEnvelope} />
+      <EnvelopeList mailbox={data.mailbox} items={envelopes} />
     {:catch error}
       <li class="error-msg">Error: {error.message}</li>
     {/await}

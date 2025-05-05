@@ -79,6 +79,106 @@ pub async fn get_mail_content(handle: tauri::AppHandle, mailbox: &str, uid: u32)
 }
 
 #[tauri::command]
+pub async fn mark_flagged(handle: tauri::AppHandle, mailbox: &str, uid: u32) -> Result<()> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let imap_session = app_state.get_imap_session().await?;
+
+    email::mark_flagged(imap_session, mailbox, uid)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn unmark_flagged(handle: tauri::AppHandle, mailbox: &str, uid: u32) -> Result<()> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let imap_session = app_state.get_imap_session().await?;
+
+    email::unmark_flagged(imap_session, mailbox, uid)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mark_seen(handle: tauri::AppHandle, mailbox: &str, uid: u32) -> Result<()> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let imap_session = app_state.get_imap_session().await?;
+
+    email::mark_seen(imap_session, mailbox, uid)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn unmark_seen(handle: tauri::AppHandle, mailbox: &str, uid: u32) -> Result<()> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let imap_session = app_state.get_imap_session().await?;
+
+    email::unmark_seen(imap_session, mailbox, uid)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mark_deleted(handle: tauri::AppHandle, mailbox: &str, uid: u32) -> Result<()> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let imap_session = app_state.get_imap_session().await?;
+
+    email::mark_deleted(imap_session, mailbox, uid)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn unmark_deleted(handle: tauri::AppHandle, mailbox: &str, uid: u32) -> Result<()> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let imap_session = app_state.get_imap_session().await?;
+
+    email::unmark_deleted(imap_session, mailbox, uid)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mark_draft(handle: tauri::AppHandle, mailbox: &str, uid: u32) -> Result<()> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let imap_session = app_state.get_imap_session().await?;
+
+    email::mark_draft(imap_session, mailbox, uid)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn unmark_draft(handle: tauri::AppHandle, mailbox: &str, uid: u32) -> Result<()> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let imap_session = app_state.get_imap_session().await?;
+
+    email::unmark_draft(imap_session, mailbox, uid)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mark_answered(handle: tauri::AppHandle, mailbox: &str, uid: u32) -> Result<()> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let imap_session = app_state.get_imap_session().await?;
+
+    email::mark_answered(imap_session, mailbox, uid)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn unmark_answered(handle: tauri::AppHandle, mailbox: &str, uid: u32) -> Result<()> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let imap_session = app_state.get_imap_session().await?;
+
+    email::unmark_answered(imap_session, mailbox, uid)?;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn send_email(
     handle: tauri::AppHandle,
     to: &str,

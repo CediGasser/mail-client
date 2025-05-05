@@ -5,26 +5,20 @@
 
   interface Props {
     items: Envelope[]
-    onselect?: (envelope: Envelope) => void
+    mailbox: string
   }
 
-  let { items, onselect }: Props = $props()
+  let { items, mailbox }: Props = $props()
   let selectedEnvelopeUid: number | null = $state(null)
-
-  const handleEnvelopeSelected = (envelope: Envelope) => {
-    // Handle envelope selection
-    selectedEnvelopeUid = envelope.uid
-    onselect?.(envelope)
-  }
 </script>
 
 <ScrollArea class="h-full">
-  <div class="flex flex-col">
+  <div class="flex flex-col gap-2 p-2">
     {#each items as item}
       <EnvelopeComponent
-        {...item}
-        onselect={handleEnvelopeSelected}
+        envelope={item}
         selected={selectedEnvelopeUid === item.uid}
+        {mailbox}
       />
     {/each}
   </div>

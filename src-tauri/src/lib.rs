@@ -50,6 +50,16 @@ pub fn run() {
             commands::get_envelopes,
             commands::send_email,
             commands::get_mailboxes,
+            commands::mark_flagged,
+            commands::unmark_flagged,
+            commands::mark_seen,
+            commands::unmark_seen,
+            commands::mark_deleted,
+            commands::unmark_deleted,
+            commands::mark_draft,
+            commands::unmark_draft,
+            commands::mark_answered,
+            commands::unmark_answered,
         ])
         .setup(|app| {
             let config_path = app

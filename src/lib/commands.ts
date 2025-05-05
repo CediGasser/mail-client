@@ -53,3 +53,67 @@ export async function sendEmail(
 ): Promise<string> {
   return invoke('send_email', { to, subject, body })
 }
+
+export async function markAsFlagged(
+  mailbox: string,
+  uid: number
+): Promise<void> {
+  return invoke('mark_flagged', { mailbox, uid })
+}
+
+export async function unmarkAsFlagged(
+  mailbox: string,
+  uid: number
+): Promise<void> {
+  return invoke('unmark_flagged', { mailbox, uid })
+}
+
+export async function markAsSeen(mailbox: string, uid: number): Promise<void> {
+  return invoke('mark_seen', { mailbox, uid })
+}
+
+export async function unmarkAsSeen(
+  mailbox: string,
+  uid: number
+): Promise<void> {
+  return invoke('unmark_seen', { mailbox, uid })
+}
+
+export async function markAsDeleted(
+  mailbox: string,
+  uid: number
+): Promise<void> {
+  return invoke('mark_deleted', { mailbox, uid })
+}
+
+export async function unmarkAsDeleted(
+  mailbox: string,
+  uid: number
+): Promise<void> {
+  return invoke('unmark_deleted', { mailbox, uid })
+}
+
+export async function markAsDraft(mailbox: string, uid: number): Promise<void> {
+  return invoke('mark_draft', { mailbox, uid })
+}
+
+export async function unmarkAsDraft(
+  mailbox: string,
+  uid: number
+): Promise<void> {
+  return invoke('unmark_draft', { mailbox, uid })
+}
+
+export async function markAsAnswered(
+  mailbox: string,
+  uid: number
+): Promise<void> {
+  return invoke('mark_answered', { mailbox, uid })
+}
+
+export async function unmarkAsAnswered(
+  mailbox: string,
+  uid: number
+): Promise<void> {
+  return invoke('unmark_answered', { mailbox, uid })
+}

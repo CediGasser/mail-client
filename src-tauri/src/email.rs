@@ -148,6 +148,168 @@ pub fn get_mail_content(session: &mut Session, mailbox: &str, uid: u32) -> Resul
     Ok(html)
 }
 
+fn add_flags(session: &mut Session, mailbox: &str, uid: u32, flags: Vec<Flag>) -> Result<()> {
+    session.select(mailbox)?;
+
+    let flags = flags
+        .iter()
+        .map(|flag| flag.to_string())
+        .collect::<Vec<String>>()
+        .join(" ");
+
+    println!("Adding flags: {}", flags);
+
+    session.uid_store(uid.to_string(), format!("+FLAGS ({})", flags))?;
+
+    Ok(())
+}
+
+fn remove_flags(session: &mut Session, mailbox: &str, uid: u32, flags: Vec<Flag>) -> Result<()> {
+    session.select(mailbox)?;
+
+    let flags = flags
+        .iter()
+        .map(|flag| flag.to_string())
+        .collect::<Vec<String>>()
+        .join(" ");
+
+    println!("Removing flags: {}", flags);
+
+    session.uid_store(uid.to_string(), format!("-FLAGS ({})", flags))?;
+
+    Ok(())
+}
+
+/// Mark a mail as flagged
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the mail
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
+pub fn mark_flagged(session: &mut Session, mailbox: &str, uid: u32) -> Result<()> {
+    add_flags(session, mailbox, uid, vec![Flag::Flagged])
+}
+
+/// Unmark a mail as flagged
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the mail
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
+pub fn unmark_flagged(session: &mut Session, mailbox: &str, uid: u32) -> Result<()> {
+    remove_flags(session, mailbox, uid, vec![Flag::Flagged])
+}
+
+/// Mark a mail as answered
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the mail
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
+pub fn mark_answered(session: &mut Session, mailbox: &str, uid: u32) -> Result<()> {
+    add_flags(session, mailbox, uid, vec![Flag::Answered])
+}
+
+/// Unmark a mail as answered
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the mail
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
+pub fn unmark_answered(session: &mut Session, mailbox: &str, uid: u32) -> Result<()> {
+    remove_flags(session, mailbox, uid, vec![Flag::Answered])
+}
+
+/// Mark a mail as draft
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the mail
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
+pub fn mark_draft(session: &mut Session, mailbox: &str, uid: u32) -> Result<()> {
+    add_flags(session, mailbox, uid, vec![Flag::Draft])
+}
+
+/// Unmark a mail as draft
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the mail
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
+pub fn unmark_draft(session: &mut Session, mailbox: &str, uid: u32) -> Result<()> {
+    remove_flags(session, mailbox, uid, vec![Flag::Draft])
+}
+
+/// Mark a mail as deleted
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the mail
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
+pub fn mark_deleted(session: &mut Session, mailbox: &str, uid: u32) -> Result<()> {
+    add_flags(session, mailbox, uid, vec![Flag::Deleted])
+}
+
+/// Unmark a mail as deleted
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the mail
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
+pub fn unmark_deleted(session: &mut Session, mailbox: &str, uid: u32) -> Result<()> {
+    remove_flags(session, mailbox, uid, vec![Flag::Deleted])
+}
+
+/// Mark a mail as seen
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the mail
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
+pub fn mark_seen(session: &mut Session, mailbox: &str, uid: u32) -> Result<()> {
+    add_flags(session, mailbox, uid, vec![Flag::Seen])
+}
+
+/// Unmark a mail as seen
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the mail
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
+pub fn unmark_seen(session: &mut Session, mailbox: &str, uid: u32) -> Result<()> {
+    remove_flags(session, mailbox, uid, vec![Flag::Seen])
+}
+
 /// Get an authenticated IMAP session
 ///
 /// # Arguments
