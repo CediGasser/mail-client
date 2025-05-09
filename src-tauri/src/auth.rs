@@ -302,15 +302,6 @@ async fn authorize(
     // Store the token in the keyring
     store_token(gmail_oauth2.clone()).expect("Failed to store token");
 
-    let config_dir = handle
-        .path()
-        .app_config_dir()
-        .map(|p| p.to_string_lossy().into_owned())
-        .ok();
-    if config_dir.is_none() {
-        return "Failed to get config dir".to_string();
-    }
-
     // Store the email in the Account Config
     let config_mutex = handle.state::<Mutex<AccountConfig>>();
     let mut config = config_mutex.lock().await;
