@@ -1,14 +1,13 @@
 <script lang="ts">
   import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte'
-  import type { Envelope } from '$lib/types'
+  import type { Envelope, Mailbox } from '$lib/types'
   import EnvelopeComponent from './Envelope.svelte'
 
   interface Props {
     items: Envelope[]
-    mailbox: string
   }
 
-  let { items, mailbox }: Props = $props()
+  let { items }: Props = $props()
   let selectedEnvelopeUid: number | null = $state(null)
 </script>
 
@@ -18,7 +17,6 @@
       <EnvelopeComponent
         envelope={item}
         selected={selectedEnvelopeUid === item.uid}
-        {mailbox}
       />
     {/each}
   </div>

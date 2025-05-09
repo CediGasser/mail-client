@@ -69,12 +69,16 @@ pub async fn get_envelopes(handle: tauri::AppHandle, mailbox: &str) -> Result<Ve
 }
 
 #[tauri::command]
-pub async fn get_mail_content(handle: tauri::AppHandle, mailbox: &str, uid: u32) -> Result<String> {
+pub async fn get_message(
+    handle: tauri::AppHandle,
+    mailbox: &str,
+    uid: u32,
+) -> Result<email::Message> {
     let app_state_mutex = handle.state::<Mutex<AppState>>();
     let mut app_state = app_state_mutex.lock().await;
     let imap_session = app_state.get_imap_session().await?;
 
-    let html = email::get_mail_content(imap_session, mailbox, uid)?;
+    let html = email::get_message(imap_session, mailbox, uid)?;
     return Ok(html);
 }
 

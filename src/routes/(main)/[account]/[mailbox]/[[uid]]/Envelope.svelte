@@ -9,18 +9,18 @@
 
   interface Props {
     selected?: boolean
-    mailbox: string
     envelope: Envelope
   }
-  let { selected, mailbox, envelope }: Props = $props()
+
+  let { selected, envelope }: Props = $props()
 
   const handleToggleStar = async (e: MouseEvent) => {
     e.preventDefault()
     try {
       if (envelope.starred) {
-        await unmarkAsFlagged(mailbox, envelope.uid)
+        await unmarkAsFlagged(envelope.mailbox_name, envelope.uid)
       } else {
-        await markAsFlagged(mailbox, envelope.uid)
+        await markAsFlagged(envelope.mailbox_name, envelope.uid)
       }
       invalidate('data:envelopes')
     } catch (error) {
@@ -36,7 +36,7 @@
   href={getLinkTo(null, null, envelope.uid)}
 >
   <div class="flex flex-row w-full items-center justify-between">
-    <div class="flex flex-row items-center gap-1">
+    <div class="flex flex-row items-start gap-1">
       {#if !envelope.read}
         <Dot height="1" width="1" size="1rem" strokeWidth="10" color="blue" />
       {/if}

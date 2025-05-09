@@ -2,7 +2,12 @@
   import * as Sidebar from '$lib/components/ui/sidebar/index.js'
   import { getLinkTo } from '$lib/navigation'
   import type { Mailbox } from '$lib/types'
-  import { formatMailbox } from '$lib/utils'
+  import { getMailboxIconComponent } from '$lib/utils'
+  import type { Component } from 'svelte'
+
+  type MailboxWithIcon = Mailbox & {
+    icon: Component
+  }
 
   interface Props {
     mailboxes: Mailbox[]
@@ -10,9 +15,14 @@
   }
   let { mailboxes, account }: Props = $props()
 
-  mailboxes = mailboxes.filter(
-    (mailbox) => !mailbox.attributes.includes('NoSelect')
-  )
+  const mailboxesWithIcons = mailboxes
+    .filter((mailbox) => !mailbox.attributes.includes('NoSelect'))
+    .map((mailbox) => {
+      return {
+        ...mailbox,
+        icon: getMailboxIconComponent(mailbox),
+      }
+    }) as MailboxWithIcon[]
 </script>
 
 <Sidebar.Root variant="inset" collapsible="icon">
@@ -24,7 +34,7 @@
       <Sidebar.GroupLabel>Mailboxes</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu>
-          {#each mailboxes.map(formatMailbox) as mailbox}
+          {#each mailboxesWithIcons as mailbox}
             <Sidebar.MenuItem>
               <Sidebar.MenuButton>
                 {#snippet child({ props })}

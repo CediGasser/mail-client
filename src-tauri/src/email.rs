@@ -20,6 +20,7 @@ pub struct Envelope {
     subject: Option<String>,
     read: bool,
     starred: bool,
+    mailbox_name: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -28,6 +29,18 @@ pub struct Mailbox {
     display_name: String,
     delimiter: String,
     attributes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Message {
+    body: String,
+    uid: Option<u32>,
+    date: Option<String>,
+    from: Option<String>,
+    subject: Option<String>,
+    read: bool,
+    starred: bool,
+    mailbox_name: String,
 }
 
 /// Get the list of mailboxes
@@ -99,6 +112,7 @@ pub fn get_envelopes(session: &mut Session, mailbox: &str) -> Result<Vec<Envelop
             let subject = message.subject().map(|s| s.to_string());
             let read = fetch.flags().contains(&Flag::Seen);
             let starred = fetch.flags().contains(&Flag::Flagged);
+            let mailbox_name = mailbox.to_string();
 
             let envelope = Envelope {
                 uid: uid,
@@ -107,6 +121,7 @@ pub fn get_envelopes(session: &mut Session, mailbox: &str) -> Result<Vec<Envelop
                 subject,
                 read,
                 starred,
+                mailbox_name,
             };
             Some(envelope)
         })
@@ -124,18 +139,40 @@ pub fn get_envelopes(session: &mut Session, mailbox: &str) -> Result<Vec<Envelop
 /// # Returns
 /// * `Result<String>` - The content of the mail as HTML
 ///
-pub fn get_mail_content(session: &mut Session, mailbox: &str, uid: u32) -> Result<String> {
+pub fn get_message(session: &mut Session, mailbox: &str, uid: u32) -> Result<Message> {
     session.select(mailbox)?;
 
     let response = session.uid_fetch(uid.to_string(), "RFC822")?;
+
+    let parser = &MessageParser::new();
 
     let response = response
         .first()
         .ok_or(Error::from("Could not get mail content".to_string()))?;
 
+    let message_bytes = response
+        .body()
+        .ok_or(Error::from("Message is missing body"))?;
+
+    let message = parser
+        .parse(message_bytes)
+        .ok_or(Error::from("Could not parse message"))?;
+
+    let uid = response.uid;
+    let date = message.date().map(|d| d.to_string());
+    let from = message
+        .from()
+        .map(|f| f.first().unwrap().name().map(|n| n.to_string()))
+        .flatten();
+    let subject = message.subject().map(|s| s.to_string());
+    let read = response.flags().contains(&Flag::Seen);
+    let starred = response.flags().contains(&Flag::Flagged);
+    let mailbox_name = mailbox.to_string();
+
     let body = response
         .body()
         .ok_or(Error::from("No body found".to_string()))?;
+
     let html = MessageParser::default()
         .parse(body)
         .ok_or(Error::from("Could not parse email message".to_string()))?
@@ -145,7 +182,18 @@ pub fn get_mail_content(session: &mut Session, mailbox: &str, uid: u32) -> Resul
         ))?
         .to_string();
 
-    Ok(html)
+    let message = Message {
+        body: html,
+        uid,
+        date,
+        from,
+        subject,
+        read,
+        starred,
+        mailbox_name,
+    };
+
+    Ok(message)
 }
 
 fn add_flags(session: &mut Session, mailbox: &str, uid: u32, flags: Vec<Flag>) -> Result<()> {

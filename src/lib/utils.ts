@@ -24,34 +24,62 @@ export async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export function formatMailbox(mailbox: Mailbox): Mailbox & { icon: Component } {
+export function formatMailbox(mailbox: Mailbox): Mailbox {
   mailbox.display_name.replace('[Gmail]/', '')
 
   if (mailbox.name === 'INBOX') {
-    return { ...mailbox, display_name: 'Inbox', icon: Mail }
+    return { ...mailbox, display_name: 'Inbox' }
   }
   if (mailbox.attributes.includes('\\All')) {
-    return { ...mailbox, display_name: 'All', icon: Archive }
+    return { ...mailbox, display_name: 'All' }
   }
   if (mailbox.attributes.includes('\\Drafts')) {
-    return { ...mailbox, display_name: 'Drafts', icon: PencilLine }
+    return { ...mailbox, display_name: 'Drafts' }
   }
   if (mailbox.attributes.includes('\\Sent')) {
-    return { ...mailbox, display_name: 'Sent', icon: Send }
+    return { ...mailbox, display_name: 'Sent' }
   }
   if (mailbox.attributes.includes('\\Flagged')) {
-    return { ...mailbox, display_name: 'Flagged', icon: Flag }
+    return { ...mailbox, display_name: 'Flagged' }
   }
   if (mailbox.attributes.includes('\\Trash')) {
-    return { ...mailbox, display_name: 'Trash', icon: Trash }
+    return { ...mailbox, display_name: 'Trash' }
   }
   if (mailbox.attributes.includes('\\Junk')) {
-    return { ...mailbox, display_name: 'Junk', icon: ArchiveX }
+    return { ...mailbox, display_name: 'Junk' }
   }
   if (mailbox.attributes.includes('\\Important')) {
-    return { ...mailbox, display_name: 'Important', icon: CircleAlert }
+    return { ...mailbox, display_name: 'Important' }
   }
-  return { ...mailbox, icon: Folder }
+  return { ...mailbox }
+}
+
+export function getMailboxIconComponent(mailbox: Mailbox): Component {
+  if (mailbox.name === 'INBOX') {
+    return Mail
+  }
+  if (mailbox.attributes.includes('\\All')) {
+    return Archive
+  }
+  if (mailbox.attributes.includes('\\Drafts')) {
+    return PencilLine
+  }
+  if (mailbox.attributes.includes('\\Sent')) {
+    return Send
+  }
+  if (mailbox.attributes.includes('\\Flagged')) {
+    return Flag
+  }
+  if (mailbox.attributes.includes('\\Trash')) {
+    return Trash
+  }
+  if (mailbox.attributes.includes('\\Junk')) {
+    return ArchiveX
+  }
+  if (mailbox.attributes.includes('\\Important')) {
+    return CircleAlert
+  }
+  return Folder
 }
 
 const DIVISIONS = [

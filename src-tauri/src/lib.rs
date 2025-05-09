@@ -46,7 +46,7 @@ pub fn run() {
             commands::config_add_account,
             commands::config_remove_account,
             commands::login_with_google,
-            commands::get_mail_content,
+            commands::get_message,
             commands::get_envelopes,
             commands::send_email,
             commands::get_mailboxes,

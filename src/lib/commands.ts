@@ -1,13 +1,5 @@
-/*
-            commands::login_with_google,
-            commands::get_mail_content,
-            commands::get_envelopes,
-            commands::send_email,
-            commands::get_mailboxes,
-            */
-
 import { invoke } from '@tauri-apps/api/core'
-import type { AccountConfig, Envelope, Mailbox } from '$lib/types'
+import type { AccountConfig, Envelope, Mailbox, Message } from '$lib/types'
 
 export async function getConfig(): Promise<AccountConfig> {
   return invoke<AccountConfig>('get_config')
@@ -39,11 +31,11 @@ export async function getEnvelopes(mailbox: string): Promise<Envelope[]> {
   return envelopes
 }
 
-export async function getMailContent(
+export async function getMessage(
   mailbox: string,
   uid: number
-): Promise<string> {
-  return invoke<string>('get_mail_content', { mailbox, uid })
+): Promise<Message> {
+  return invoke<Message>('get_message', { mailbox, uid })
 }
 
 export async function sendEmail(
