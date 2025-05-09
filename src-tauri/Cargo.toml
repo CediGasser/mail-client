@@ -22,7 +22,7 @@ tauri-build = {version = "2", features = [] }
 axum = {version = "0.6.12", features = ["headers"] }
 chrono = "0.4.40"
 imap = "2.4.1"
-keyring = {version = "3.6.2", features = ["apple-native"] }
+keyring = {version = "3.6.2", features = ["apple-native", "windows-native"] }
 lettre = "0.11.15"
 mail-parser = "0.10.2"
 native-tls = "0.2.14"
