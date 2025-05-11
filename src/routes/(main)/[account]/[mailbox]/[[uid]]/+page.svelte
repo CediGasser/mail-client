@@ -30,7 +30,7 @@
         <LoadingSpinner />
       </div>
     {:then envelopes}
-      <EnvelopeList items={envelopes} />
+      <EnvelopeList account={data.account} items={envelopes} />
     {:catch error}
       <li class="error-msg">Error: {error.message}</li>
     {/await}

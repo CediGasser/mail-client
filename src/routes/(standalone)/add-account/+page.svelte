@@ -11,7 +11,7 @@
 
   const handleLoginWithGoogle = async (event: Event) => {
     isLoading = true
-    await loginWithGoogle(email)
+    await loginWithGoogle()
     isLoading = false
   }
 </script>

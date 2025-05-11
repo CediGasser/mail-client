@@ -5,9 +5,10 @@
 
   interface Props {
     items: Envelope[]
+    account: string
   }
 
-  let { items }: Props = $props()
+  let { items, account }: Props = $props()
   let selectedEnvelopeUid: number | null = $state(null)
 </script>
 
@@ -17,6 +18,7 @@
       <EnvelopeComponent
         envelope={item}
         selected={selectedEnvelopeUid === item.uid}
+        {account}
       />
     {/each}
   </div>

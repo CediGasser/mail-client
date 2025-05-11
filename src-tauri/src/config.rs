@@ -5,7 +5,7 @@ use std::io::{Read, Seek, Write};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct AccountConfig {
+pub struct Config {
     accounts: Vec<Account>,
     path: PathBuf,
 }
@@ -15,7 +15,7 @@ pub struct Account {
     email: String,
 }
 
-impl AccountConfig {
+impl Config {
     pub fn load(path: PathBuf) -> Result<Self> {
         // Ensure parent directories exist
         if let Some(parent) = path.parent() {
@@ -46,7 +46,7 @@ impl AccountConfig {
         let accounts: Vec<Account> = serde_json::from_str(&file_contents)
             .map_err(|e| Error::from(format!("Failed to parse config file: {}", e.to_string())))?;
 
-        let config = AccountConfig { accounts, path };
+        let config = Config { accounts, path };
         Ok(config)
     }
 

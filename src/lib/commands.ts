@@ -13,16 +13,19 @@ export async function configRemoveAccount(email: string): Promise<void> {
   return invoke('config_remove_account', { email })
 }
 
-export async function loginWithGoogle(email: string): Promise<void> {
-  return invoke('login_with_google', { email })
+export async function loginWithGoogle(): Promise<void> {
+  return invoke('login_with_google')
 }
 
-export async function getMailboxes(): Promise<Mailbox[]> {
-  return invoke<Mailbox[]>('get_mailboxes')
+export async function getMailboxes(email: string): Promise<Mailbox[]> {
+  return invoke<Mailbox[]>('get_mailboxes', { email })
 }
 
-export async function getEnvelopes(mailbox: string): Promise<Envelope[]> {
-  let envelopes = await invoke<Envelope[]>('get_envelopes', { mailbox })
+export async function getEnvelopes(
+  email: string,
+  mailbox: string
+): Promise<Envelope[]> {
+  let envelopes = await invoke<Envelope[]>('get_envelopes', { email, mailbox })
 
   envelopes.forEach((envelope) => {
     envelope.date = new Date(envelope.date)
@@ -32,80 +35,42 @@ export async function getEnvelopes(mailbox: string): Promise<Envelope[]> {
 }
 
 export async function getMessage(
+  email: string,
   mailbox: string,
   uid: number
 ): Promise<Message> {
-  return invoke<Message>('get_message', { mailbox, uid })
+  return invoke<Message>('get_message', { email, mailbox, uid })
 }
 
 export async function sendEmail(
+  email: string,
   to: string,
   subject: string,
   body: string
 ): Promise<string> {
-  return invoke('send_email', { to, subject, body })
+  return invoke('send_email', { email, to, subject, body })
 }
 
-export async function markAsFlagged(
+export async function removeFlags(
+  email: string,
   mailbox: string,
-  uid: number
-): Promise<void> {
-  return invoke('mark_flagged', { mailbox, uid })
+  uid: number,
+  flags: string[] | string
+) {
+  if (typeof flags === 'string') {
+    flags = [flags]
+  }
+  return invoke('remove_flags', { email, mailbox, uid, flags })
 }
 
-export async function unmarkAsFlagged(
+export async function addFlags(
+  email: string,
   mailbox: string,
-  uid: number
-): Promise<void> {
-  return invoke('unmark_flagged', { mailbox, uid })
-}
-
-export async function markAsSeen(mailbox: string, uid: number): Promise<void> {
-  return invoke('mark_seen', { mailbox, uid })
-}
-
-export async function unmarkAsSeen(
-  mailbox: string,
-  uid: number
-): Promise<void> {
-  return invoke('unmark_seen', { mailbox, uid })
-}
-
-export async function markAsDeleted(
-  mailbox: string,
-  uid: number
-): Promise<void> {
-  return invoke('mark_deleted', { mailbox, uid })
-}
-
-export async function unmarkAsDeleted(
-  mailbox: string,
-  uid: number
-): Promise<void> {
-  return invoke('unmark_deleted', { mailbox, uid })
-}
-
-export async function markAsDraft(mailbox: string, uid: number): Promise<void> {
-  return invoke('mark_draft', { mailbox, uid })
-}
-
-export async function unmarkAsDraft(
-  mailbox: string,
-  uid: number
-): Promise<void> {
-  return invoke('unmark_draft', { mailbox, uid })
-}
-
-export async function markAsAnswered(
-  mailbox: string,
-  uid: number
-): Promise<void> {
-  return invoke('mark_answered', { mailbox, uid })
-}
-
-export async function unmarkAsAnswered(
-  mailbox: string,
-  uid: number
-): Promise<void> {
-  return invoke('unmark_answered', { mailbox, uid })
+  uid: number,
+  flags: string[] | string
+) {
+  if (typeof flags === 'string') {
+    flags = [flags]
+  }
+  return invoke('add_flags', { email, mailbox, uid, flags })
 }

@@ -5,11 +5,11 @@ export const load: LayoutLoad = async ({ params, depends, parent }) => {
   depends('data:envelopes')
 
   const mailboxName = decodeURIComponent(params.mailbox)
-  const { mailboxes } = await parent()
+  const { mailboxes, account } = await parent()
   const mailbox = mailboxes.find((m) => m.name === mailboxName)
 
   // Get the messages for the mailbox
-  const envelopes = getEnvelopes(mailboxName).then((envelopes) => {
+  const envelopes = getEnvelopes(account, mailboxName).then((envelopes) => {
     envelopes.sort((a, b) => {
       return b.date.getTime() - a.date.getTime()
     })

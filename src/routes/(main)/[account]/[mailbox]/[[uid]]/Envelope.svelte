@@ -1,6 +1,6 @@
 <script lang="ts">
   import { invalidate } from '$app/navigation'
-  import { markAsFlagged, unmarkAsFlagged } from '$lib/commands'
+  import { addFlags, removeFlags } from '$lib/commands'
   import { getLinkTo } from '$lib/navigation'
   import type { Envelope } from '$lib/types'
   import { formatTimeAgo } from '$lib/utils'
@@ -10,17 +10,23 @@
   interface Props {
     selected?: boolean
     envelope: Envelope
+    account: string
   }
 
-  let { selected, envelope }: Props = $props()
+  let { selected, envelope, account }: Props = $props()
 
   const handleToggleStar = async (e: MouseEvent) => {
     e.preventDefault()
     try {
       if (envelope.starred) {
-        await unmarkAsFlagged(envelope.mailbox_name, envelope.uid)
+        await removeFlags(
+          account,
+          envelope.mailbox_name,
+          envelope.uid,
+          '/Flagged'
+        )
       } else {
-        await markAsFlagged(envelope.mailbox_name, envelope.uid)
+        await addFlags(account, envelope.mailbox_name, envelope.uid, '/Flagged')
       }
       invalidate('data:envelopes')
     } catch (error) {

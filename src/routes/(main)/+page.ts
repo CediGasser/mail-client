@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit'
 import type { PageLoad } from './$types'
-import { getConfig, loginWithGoogle } from '$lib/commands'
+import { getConfig } from '$lib/commands'
 
 // Tauri doesn't have a Node.js server to do proper SSR
 // so we will use adapter-static to prerender the app (SSG)
@@ -10,19 +10,13 @@ export const ssr = false
 
 export const load: PageLoad = async () => {
   // Load the app's configuration
+  console.log('Loading app configuration...')
   const config = await getConfig()
+  console.log('Config:', config)
 
   // Try to authorize user and redirect to first account's indbox
   if (config.length > 0) {
     const email = config[0].email
-    try {
-      await loginWithGoogle(email)
-    } catch (error) {
-      console.error('Error logging in with Google:', error)
-      // Handle the error (e.g., show a notification)
-      const somethingWrongPath = '/something-wrong'
-      redirect(303, somethingWrongPath)
-    }
     const inboxPath = `/${email}/INBOX/`
     redirect(303, inboxPath)
   }

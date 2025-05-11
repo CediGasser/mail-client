@@ -5,7 +5,7 @@ import { formatMailbox } from '$lib/utils'
 export const load: LayoutLoad = async ({ params }) => {
   const { account } = params
 
-  const mailboxes = (await getMailboxes()).map(formatMailbox)
+  const mailboxes = (await getMailboxes(account)).map(formatMailbox)
 
   return {
     mailboxes,

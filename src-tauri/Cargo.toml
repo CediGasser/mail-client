@@ -34,5 +34,5 @@ tauri-plugin-opener = "2"
 utf7-imap = "0.3.2"
 
 [dependencies.reqwest]
-features = ["json"]
+features = ["json", "blocking"]
 version = "0.12.15"

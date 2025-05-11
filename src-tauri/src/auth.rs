@@ -1,16 +1,15 @@
 // This file contains the authentication logic for the application.
 use axum::{extract::Query, response::IntoResponse, routing::get, Extension, Router};
-use chrono::{DateTime, TimeDelta, Utc};
-use lettre::transport::smtp::authentication::Credentials;
+use chrono::{TimeDelta, Utc};
 use oauth2::{
     basic::{BasicClient, BasicErrorResponseType, BasicTokenType},
     reqwest, AuthUrl, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
     EmptyExtraTokenFields, EndpointNotSet, EndpointSet, PkceCodeChallenge, PkceCodeVerifier,
-    RedirectUrl, RefreshToken, RevocationErrorResponseType, RevocationUrl, StandardErrorResponse,
+    RedirectUrl, RevocationErrorResponseType, RevocationUrl, StandardErrorResponse,
     StandardRevocableToken, StandardTokenIntrospectionResponse, StandardTokenResponse,
     TokenResponse, TokenUrl,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::{
     net::{SocketAddr, TcpListener},
     sync::Arc,
@@ -22,8 +21,8 @@ use tauri::{
 use tauri_plugin_opener::open_url;
 
 use crate::{
-    auth_store::{load_token_for, store_token},
-    config::AccountConfig,
+    auth_store::{OAuthCredentials, PersistedCredentials},
+    config::Config,
     constants::{
         GOOGLE_AUTH_URI, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_MAIL_SCOPE,
         GOOGLE_PROFILE_API, GOOGLE_PROFILE_MAIL_SCOPE, GOOGLE_PROFILE_SCOPE, GOOGLE_REVOKATION_URI,
@@ -33,56 +32,6 @@ use crate::{
     util::navigate,
     AppState,
 };
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GmailOAuth2 {
-    pub user: String,
-    pub access_token: String,
-    pub expires_at: DateTime<Utc>,
-    pub refresh_token: String,
-}
-
-impl GmailOAuth2 {
-    pub fn user(&self) -> &str {
-        &self.user
-    }
-    pub fn access_token(&self) -> &str {
-        &self.access_token
-    }
-    pub fn refresh_token(&self) -> &str {
-        &self.refresh_token
-    }
-    pub fn expires_at(&self) -> &DateTime<Utc> {
-        &self.expires_at
-    }
-
-    pub fn is_token_valid(&self) -> bool {
-        let now = Utc::now().timestamp();
-        let expires_at = self.expires_at.timestamp();
-        let diff = expires_at - now;
-        if diff > 0 {
-            return true;
-        }
-        return false;
-    }
-}
-
-impl imap::Authenticator for &GmailOAuth2 {
-    type Response = String;
-
-    fn process(&self, _data: &[u8]) -> Self::Response {
-        format!(
-            "user={}\x01auth=Bearer {}\x01\x01",
-            self.user, self.access_token
-        )
-    }
-}
-
-impl Into<Credentials> for &GmailOAuth2 {
-    fn into(self) -> Credentials {
-        Credentials::new(self.user.clone(), self.access_token.clone())
-    }
-}
 
 type OAuthClient = Client<
     StandardErrorResponse<BasicErrorResponseType>,
@@ -105,7 +54,7 @@ struct OAuthState {
     socket_addr: SocketAddr,
 }
 
-fn create_client(redirect_url: RedirectUrl) -> OAuthClient {
+pub fn create_client() -> OAuthClient {
     let client_id = ClientId::new(GOOGLE_CLIENT_ID.to_string());
     let client_secret = ClientSecret::new(GOOGLE_CLIENT_SECRET.to_string());
     let auth_uri = AuthUrl::new(GOOGLE_AUTH_URI.to_string()).expect("Invalid authorization URL");
@@ -117,8 +66,7 @@ fn create_client(redirect_url: RedirectUrl) -> OAuthClient {
         .set_client_secret(client_secret)
         .set_auth_uri(auth_uri)
         .set_token_uri(token_uri)
-        .set_revocation_url(revokation_url)
-        .set_redirect_uri(redirect_url);
+        .set_revocation_url(revokation_url);
 
     return client;
 }
@@ -131,10 +79,11 @@ fn get_available_addr() -> SocketAddr {
     return addr;
 }
 
-pub async fn init_google_oauth_flow(handle: tauri::AppHandle, user: &str) -> Result<(), Error> {
+pub async fn init_google_oauth_flow(handle: tauri::AppHandle) -> Result<(), Error> {
     let (pkce_code_challenge, pkce_code_verifier) = PkceCodeChallenge::new_random_sha256();
     let socket_addr = get_available_addr(); // or any other port
     let redirect_url = format!("http://{socket_addr}/callback").to_string();
+    let client = create_client().set_redirect_uri(RedirectUrl::new(redirect_url.clone()).unwrap());
 
     let oauth_state = OAuthState {
         csrf_token: CsrfToken::new_random(),
@@ -142,63 +91,12 @@ pub async fn init_google_oauth_flow(handle: tauri::AppHandle, user: &str) -> Res
             pkce_code_challenge,
             PkceCodeVerifier::secret(&pkce_code_verifier).to_string(),
         )),
-        client: Arc::new(create_client(RedirectUrl::new(redirect_url).unwrap())),
+        client: Arc::new(client),
         socket_addr,
     };
 
+    let oauth_state_clone = oauth_state.clone();
     handle.manage(oauth_state);
-    let oauth_state_clone = handle.state::<OAuthState>().clone();
-
-    // Try to get the existing auth from the keyring
-    let auth = load_token_for(user);
-
-    if let Some(mut auth) = auth {
-        // Check if the token is still valid
-        if auth.is_token_valid() {
-            println!("Token is still valid");
-            let app_state = Mutex::new(AppState {
-                imap_session: None,
-                auth,
-            });
-
-            // Store the GmailOAuth2 object in the app state
-            handle.manage(app_state);
-            // Open the inbox in the tauri app
-            let window = handle.get_webview_window("main").unwrap();
-            navigate(window, format!("/{}/INBOX", user).as_str());
-            return Ok(());
-        } else {
-            // Token is expired, we need to refresh it
-            println!("Token is expired, refreshing it");
-            let token = oauth_state_clone
-                .client
-                .exchange_refresh_token(&RefreshToken::new(auth.refresh_token.clone()))
-                .request_async(&reqwest::Client::new())
-                .await?;
-
-            auth.access_token = token.access_token().secret().to_string();
-            auth.expires_at =
-                Utc::now() + TimeDelta::from_std(token.expires_in().unwrap()).unwrap();
-
-            // Store the token in the keyring
-            store_token(auth.clone()).expect("Failed to store token");
-            let app_state = Mutex::new(AppState {
-                imap_session: None,
-                auth: auth.clone(),
-            });
-            // Store the GmailOAuth2 object in the app state
-            let could_manage = handle.manage(app_state);
-            if !could_manage {
-                return Err(Error::from("Failed to manage app state".to_string()));
-            }
-            // Open the inbox in the tauri app
-            let window = handle.get_webview_window("main").unwrap();
-            navigate(window, format!("/{}/INBOX", user).as_str());
-            return Ok(());
-        }
-    } else {
-        println!("No token found, starting OAuth flow");
-    }
 
     let scopes: Vec<oauth2::Scope> = vec![
         oauth2::Scope::new(GOOGLE_MAIL_SCOPE.to_string()),
@@ -249,7 +147,9 @@ async fn authorize(
     handle: Extension<tauri::AppHandle>,
     query: Query<CallbackQuery>,
 ) -> impl IntoResponse {
-    let oauth_state = handle.state::<OAuthState>();
+    let oauth_state = handle
+        .try_state::<OAuthState>()
+        .expect("Failed to get OAuth Flow state");
 
     if query.state.secret() != oauth_state.csrf_token.secret() {
         return "Not authorized".to_string();
@@ -292,35 +192,36 @@ async fn authorize(
     let email = profile_json.email.as_str();
     let user = email.to_string();
 
-    let gmail_oauth2 = GmailOAuth2 {
-        user: user.clone(),
-        access_token: token.access_token().to_owned().into_secret(),
-        expires_at: Utc::now() + TimeDelta::from_std(token.expires_in().unwrap()).unwrap(),
-        refresh_token: token.refresh_token().unwrap().to_owned().into_secret(),
-    };
+    let app_state_mutex = handle
+        .try_state::<Mutex<AppState>>()
+        .expect("Failed to get app state");
 
-    // Store the token in the keyring
-    store_token(gmail_oauth2.clone()).expect("Failed to store token");
+    let credential = OAuthCredentials::new(
+        token.access_token().secret().to_string(),
+        Utc::now() + TimeDelta::from_std(token.expires_in().unwrap()).unwrap(),
+        token
+            .refresh_token()
+            .map(|rt| rt.secret().to_string())
+            .unwrap_or_else(|| "".to_string()),
+        user.clone(),
+    );
+
+    credential.persist().expect("Failed to persist credentials");
+
+    let mut app_state = app_state_mutex.lock().await;
+    if let Err(_) = app_state.set_account(email.to_string(), credential) {
+        return "Failed to set account".to_string();
+    }
 
     // Store the email in the Account Config
-    let config_mutex = handle.state::<Mutex<AccountConfig>>();
+    let config_mutex = handle
+        .try_state::<Mutex<Config>>()
+        .expect("Failed to get config state");
     let mut config = config_mutex.lock().await;
 
     // Add the email to the config if it doesn't exist
     if let Err(e) = config.add_account(email.to_string()) {
         println!("Failed to add account to config: {}", e);
-    }
-
-    let app_state = Mutex::new(AppState {
-        imap_session: None,
-        auth: gmail_oauth2,
-    });
-
-    // Store the GmailOAuth2 object in the app state
-    let could_manage = handle.manage(app_state);
-
-    if !could_manage {
-        return "Failed to manage app state".to_string();
     }
 
     // Signal the server to shut down
@@ -348,7 +249,11 @@ async fn run_server(handle: &tauri::AppHandle) -> Result<(), axum::Error> {
         .route("/callback", get(authorize))
         .layer(Extension(handle.clone()));
 
-    let _ = axum::Server::bind(&handle.state::<OAuthState>().socket_addr.clone())
+    let oauth_state = handle
+        .try_state::<OAuthState>()
+        .expect("Failed to get OAuth Flow state");
+
+    let _ = axum::Server::bind(&oauth_state.socket_addr.clone())
         .serve(app.into_make_service())
         .await;
 
