@@ -51,11 +51,13 @@ export async function sendEmail(
   return invoke('send_email', { email, to, subject, body })
 }
 
+type Flag = '\\Seen' | '\\Answered' | '\\Flagged' | '\\Deleted' | '\\Draft'
+
 export async function removeFlags(
   email: string,
   mailbox: string,
   uid: number,
-  flags: string[] | string
+  flags: Flag[] | Flag
 ) {
   if (typeof flags === 'string') {
     flags = [flags]
@@ -67,7 +69,7 @@ export async function addFlags(
   email: string,
   mailbox: string,
   uid: number,
-  flags: string[] | string
+  flags: Flag[] | Flag
 ) {
   if (typeof flags === 'string') {
     flags = [flags]

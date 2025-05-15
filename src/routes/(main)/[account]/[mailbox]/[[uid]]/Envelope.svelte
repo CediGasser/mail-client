@@ -15,7 +15,7 @@
 
   let { selected, envelope, account }: Props = $props()
 
-  const handleToggleStar = async (e: MouseEvent) => {
+  const handleToggleFlagged = async (e: MouseEvent) => {
     e.preventDefault()
     try {
       if (envelope.starred) {
@@ -23,10 +23,15 @@
           account,
           envelope.mailbox_name,
           envelope.uid,
-          '/Flagged'
+          '\\Flagged'
         )
       } else {
-        await addFlags(account, envelope.mailbox_name, envelope.uid, '/Flagged')
+        await addFlags(
+          account,
+          envelope.mailbox_name,
+          envelope.uid,
+          '\\Flagged'
+        )
       }
       invalidate('data:envelopes')
     } catch (error) {
@@ -57,7 +62,7 @@
           class="p-0 m-0 rounded-sm border-none bg-transparent {envelope.starred
             ? ''
             : 'text-gray-500 hover:text-black'} focus:outline-none"
-          onclick={handleToggleStar}
+          onclick={handleToggleFlagged}
         >
           <Star size="1rem" fill={envelope.starred ? 'black' : 'transparent'} />
         </button>

@@ -1,7 +1,7 @@
 import type { PageLoad } from './$types'
 import { getMessage } from '$lib/commands'
 
-export const load: PageLoad = async ({ params }) => {
+export const load: PageLoad = async ({ params, parent }) => {
   const mailbox = decodeURIComponent(params.mailbox)
   const uid = params.uid
   const account = params.account
@@ -14,7 +14,7 @@ export const load: PageLoad = async ({ params }) => {
   }
 
   // Get the message for the uid
-  const message = getMessage(account, mailbox, parseInt(uid, 10))
+  const message = await getMessage(account, mailbox, parseInt(uid, 10))
 
   return {
     message,
