@@ -1,7 +1,8 @@
 import type { PageLoad } from './$types'
 import { getMessage } from '$lib/commands'
 
-export const load: PageLoad = async ({ params, parent }) => {
+export const load: PageLoad = async ({ params, depends }) => {
+  depends('data:message')
   const mailbox = decodeURIComponent(params.mailbox)
   const uid = params.uid
   const account = params.account

@@ -34,6 +34,7 @@
         )
       }
       invalidate('data:envelopes')
+      invalidate('data:message')
     } catch (error) {
       console.error('Error toggling star:', error)
       return

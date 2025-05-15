@@ -142,7 +142,7 @@ pub fn get_envelopes(session: &mut Session, mailbox: &str) -> Result<Vec<Envelop
 pub fn get_message(session: &mut Session, mailbox: &str, uid: u32) -> Result<Message> {
     session.select(mailbox)?;
 
-    let response = session.uid_fetch(uid.to_string(), "RFC822")?;
+    let response = session.uid_fetch(uid.to_string(), "(UID FLAGS RFC822)")?;
 
     let parser = &MessageParser::new();
 

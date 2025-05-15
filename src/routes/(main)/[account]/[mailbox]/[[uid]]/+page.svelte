@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Resizable from '$lib/components/ui/resizable/index'
+  import * as Sidebar from '$lib/components/ui/sidebar/index'
   import LoadingSpinner from '$lib/components/custom/LoadingSpinner.svelte'
   import Button from '$lib/components/ui/button/button.svelte'
   import EnvelopeList from './EnvelopeList.svelte'
@@ -8,8 +9,11 @@
   import MessageComponent from './Message.svelte'
   import { addFlags, removeFlags } from '$lib/commands'
   import { invalidate } from '$app/navigation'
+  import { Input } from '$lib/components/ui/input'
 
   let { data } = $props()
+
+  let search = $state('')
 
   const handleToggleFlagged = async (e: MouseEvent) => {
     e.preventDefault()
@@ -31,6 +35,7 @@
         )
       }
       invalidate('data:envelopes')
+      invalidate('data:message')
     } catch (error) {
       console.error('Error toggling star:', error)
     }
@@ -39,11 +44,19 @@
 
 <Resizable.PaneGroup direction="horizontal">
   <Resizable.Pane minSize={20} defaultSize={data.message ? 30 : 100}>
-    <header class="flex flex-row justify-between items-center p-2">
-      <h2 class="text-2xl align-middle">
-        {data.mailbox?.display_name ?? 'Mailbox'}
-      </h2>
-      <Button variant="outline" href="/mail/new">Compose</Button>
+    <header class="flex flex-row gap-3 items-center p-2">
+      <div class="flex flex-row gap-3 items-center">
+        <Sidebar.Trigger />
+        <h2 class="text-2xl align-middle">
+          {data.mailbox?.display_name ?? 'Mailbox'}
+        </h2>
+      </div>
+      <Input
+        type="text"
+        placeholder="Search"
+        class="max-w-xs"
+        bind:value={search}
+      />
     </header>
     <Separator />
     {#await data.envelopes}
@@ -51,7 +64,7 @@
         <LoadingSpinner />
       </div>
     {:then envelopes}
-      <EnvelopeList account={data.account} items={envelopes} />
+      <EnvelopeList {search} account={data.account} items={envelopes} />
     {:catch error}
       <li class="error-msg">Error: {error.message}</li>
     {/await}
@@ -62,18 +75,9 @@
   {#if data.message}
     <Resizable.Pane minSize={20}>
       <header class="flex flex-row justify-between items-center p-2">
-        <button
-          class="p-0 m-0 rounded-sm border-none bg-transparent {data.message
-            .starred
-            ? ''
-            : 'text-gray-500 hover:text-black'} focus:outline-none"
-          onclick={handleToggleFlagged}
-        >
-          <Star
-            size="1rem"
-            fill={data.message?.starred ? 'black' : 'transparent'}
-          />
-        </button>
+        <Button onclick={handleToggleFlagged} variant="outline">
+          <Star fill={data.message.starred ? 'black' : 'transparent'} />
+        </Button>
       </header>
       <Separator />
       <MessageComponent message={data.message} />

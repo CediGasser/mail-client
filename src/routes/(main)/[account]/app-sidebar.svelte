@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '$lib/components/ui/button'
   import * as Sidebar from '$lib/components/ui/sidebar/index.js'
   import { getLinkTo } from '$lib/navigation'
   import type { Mailbox } from '$lib/types'
@@ -26,9 +27,7 @@
 </script>
 
 <Sidebar.Root variant="inset" collapsible="icon">
-  <Sidebar.Header>
-    <Sidebar.Trigger />
-  </Sidebar.Header>
+  <Sidebar.Header></Sidebar.Header>
   <Sidebar.Content>
     <Sidebar.Group>
       <Sidebar.GroupLabel>Mailboxes</Sidebar.GroupLabel>
@@ -50,5 +49,7 @@
       </Sidebar.GroupContent>
     </Sidebar.Group>
   </Sidebar.Content>
-  <Sidebar.Footer />
+  <Sidebar.Footer>
+    <Button variant="default" href="/mail/new">Compose</Button>
+  </Sidebar.Footer>
 </Sidebar.Root>
