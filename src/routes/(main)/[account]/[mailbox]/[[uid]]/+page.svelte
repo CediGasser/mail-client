@@ -7,9 +7,17 @@
   import Separator from '$lib/components/ui/separator/separator.svelte'
   import Star from '@lucide/svelte/icons/star'
   import MessageComponent from './Message.svelte'
-  import { addFlags, removeFlags } from '$lib/commands'
+  import {
+    addFlags,
+    archiveMessage,
+    deleteMessage,
+    removeFlags,
+  } from '$lib/commands'
   import { invalidate } from '$app/navigation'
   import { Input } from '$lib/components/ui/input'
+  import Trash from '@lucide/svelte/icons/trash'
+  import { navigateTo } from '$lib/navigation'
+  import Archive from '@lucide/svelte/icons/archive'
 
   let { data } = $props()
 
@@ -18,32 +26,64 @@
   const handleToggleFlagged = async (e: MouseEvent) => {
     e.preventDefault()
     if (!data.message) return
+    const message = await data.message
     try {
-      if (data.message?.starred) {
+      if (message?.starred) {
         await removeFlags(
           data.account,
-          data.message.mailbox_name,
-          data.message.uid,
+          message.mailbox_name,
+          message.uid,
           '\\Flagged'
         )
       } else {
         await addFlags(
           data.account,
-          data.message.mailbox_name,
-          data.message.uid,
+          message.mailbox_name,
+          message.uid,
           '\\Flagged'
         )
       }
-      invalidate('data:envelopes')
       invalidate('data:message')
     } catch (error) {
       console.error('Error toggling star:', error)
     }
   }
+
+  const handleDelete = async (e: MouseEvent) => {
+    e.preventDefault()
+    if (!data.message) return
+    const message = await data.message
+    try {
+      await deleteMessage(data.account, message.mailbox_name, message.uid)
+
+      await navigateTo(data.account, message.mailbox_name, null)
+
+      invalidate('data:envelopes')
+      invalidate('data:message')
+    } catch (error) {
+      console.error('Error deleting message:', error)
+    }
+  }
+
+  const handleArchive = async (e: MouseEvent) => {
+    e.preventDefault()
+    if (!data.message) return
+    const message = await data.message
+    try {
+      await archiveMessage(data.account, message.mailbox_name, message.uid)
+
+      await navigateTo(data.account, message.mailbox_name, null)
+
+      invalidate('data:envelopes')
+      invalidate('data:message')
+    } catch (error) {
+      console.error('Error archiving message:', error)
+    }
+  }
 </script>
 
 <Resizable.PaneGroup direction="horizontal">
-  <Resizable.Pane minSize={20} defaultSize={data.message ? 30 : 100}>
+  <Resizable.Pane minSize={20} defaultSize={30}>
     <header class="flex flex-row gap-3 items-center p-2">
       <div class="flex flex-row gap-3 items-center">
         <Sidebar.Trigger />
@@ -74,13 +114,27 @@
   {/if}
   {#if data.message}
     <Resizable.Pane minSize={20}>
-      <header class="flex flex-row justify-between items-center p-2">
-        <Button onclick={handleToggleFlagged} variant="outline">
-          <Star fill={data.message.starred ? 'black' : 'transparent'} />
-        </Button>
-      </header>
-      <Separator />
-      <MessageComponent message={data.message} />
+      {#await data.message}
+        <div class="h-full flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      {:then message}
+        <header class="flex flex-row gap-3 p-2">
+          <Button onclick={handleToggleFlagged} variant="outline">
+            <Star fill={message.starred ? 'black' : 'transparent'} />
+          </Button>
+          <Button onclick={handleArchive} variant="outline">
+            <Archive />
+          </Button>
+          <Button onclick={handleDelete} variant="outline">
+            <Trash />
+          </Button>
+        </header>
+        <Separator />
+        <MessageComponent {message} />
+      {:catch error}
+        <li class="error-msg">Error: {error.message}</li>
+      {/await}
     </Resizable.Pane>
   {/if}
 </Resizable.PaneGroup>

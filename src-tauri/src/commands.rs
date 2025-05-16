@@ -104,7 +104,7 @@ pub async fn add_flags(
     email: &str,
     mailbox: &str,
     uid: u32,
-    flags: Vec<String>,
+    flags: Vec<&str>,
 ) -> Result<()> {
     let app_state_mutex = handle.state::<Mutex<AppState>>();
     let mut app_state = app_state_mutex.lock().await;
@@ -123,7 +123,7 @@ pub async fn remove_flags(
     email: &str,
     mailbox: &str,
     uid: u32,
-    flags: Vec<String>,
+    flags: Vec<&str>,
 ) -> Result<()> {
     let app_state_mutex = handle.state::<Mutex<AppState>>();
     let mut app_state = app_state_mutex.lock().await;
@@ -133,6 +133,66 @@ pub async fn remove_flags(
     let imap_session = account.get_imap_session().await?;
 
     email::remove_flags(imap_session, mailbox, uid, flags)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn delete_message(
+    handle: tauri::AppHandle,
+    email: &str,
+    mailbox: &str,
+    uid: u32,
+) -> Result<()> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let account = app_state
+        .get_account(email)
+        .ok_or(Error::from("Account not found"))?;
+    let imap_session = account.get_imap_session().await?;
+
+    let mailboxes = email::get_mailboxes(imap_session).unwrap();
+    let trash = mailboxes
+        .iter()
+        .find(|m| m.attributes.contains(&"\\Trash".to_string()));
+
+    // Move to trash mailbox if it exists, otherwise add \Deleted flag
+    if let Some(trash) = trash {
+        if trash.name != mailbox {
+            email::move_mail(imap_session, mailbox, uid, &trash.name)?;
+            return Ok(());
+        }
+    }
+
+    email::add_flags(imap_session, mailbox, uid, vec!["\\Deleted"])?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn archive_message(
+    handle: tauri::AppHandle,
+    email: &str,
+    mailbox: &str,
+    uid: u32,
+) -> Result<()> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let account = app_state
+        .get_account(email)
+        .ok_or(Error::from("Account not found"))?;
+    let imap_session = account.get_imap_session().await?;
+
+    let mailboxes = email::get_mailboxes(imap_session).unwrap();
+    let archive = mailboxes
+        .iter()
+        .find(|m| m.attributes.contains(&"\\All".to_string()));
+
+    // Move to archive mailbox if it exists, otherwise add \Deleted flag
+    if let Some(archive) = archive {
+        email::move_mail(imap_session, mailbox, uid, &archive.name)?;
+    } else {
+        return Err(Error::from("Archive mailbox not found"))?;
+    }
+
     Ok(())
 }
 

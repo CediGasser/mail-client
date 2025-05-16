@@ -27,11 +27,10 @@ export async function getEnvelopes(
 ): Promise<Envelope[]> {
   let envelopes = await invoke<Envelope[]>('get_envelopes', { email, mailbox })
 
-  envelopes.forEach((envelope) => {
-    envelope.date = new Date(envelope.date)
-  })
-
-  return envelopes
+  return envelopes.map((envelope) => ({
+    ...envelope,
+    date: new Date(envelope.date),
+  }))
 }
 
 export async function getMessage(
@@ -75,4 +74,20 @@ export async function addFlags(
     flags = [flags]
   }
   return invoke('add_flags', { email, mailbox, uid, flags })
+}
+
+export async function deleteMessage(
+  email: string,
+  mailbox: string,
+  uid: number
+): Promise<void> {
+  return invoke('delete_message', { email, mailbox, uid })
+}
+
+export async function archiveMessage(
+  email: string,
+  mailbox: string,
+  uid: number
+): Promise<void> {
+  return invoke('archive_message', { email, mailbox, uid })
 }

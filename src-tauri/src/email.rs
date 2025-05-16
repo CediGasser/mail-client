@@ -25,10 +25,10 @@ pub struct Envelope {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Mailbox {
-    name: String,
-    display_name: String,
-    delimiter: String,
-    attributes: Vec<String>,
+    pub name: String,
+    pub display_name: String,
+    pub delimiter: String,
+    pub attributes: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -196,14 +196,20 @@ pub fn get_message(session: &mut Session, mailbox: &str, uid: u32) -> Result<Mes
     Ok(message)
 }
 
-pub fn add_flags(session: &mut Session, mailbox: &str, uid: u32, flags: Vec<String>) -> Result<()> {
+/// Add flags to a message
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the message
+/// * `flags` - The flags to add
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
+pub fn add_flags(session: &mut Session, mailbox: &str, uid: u32, flags: Vec<&str>) -> Result<()> {
     session.select(mailbox)?;
 
-    let flags = flags
-        .iter()
-        .map(|flag| flag.to_string())
-        .collect::<Vec<String>>()
-        .join(" ");
+    let flags = flags.join(" ");
 
     println!("Adding flags: {}", flags);
 
@@ -212,24 +218,47 @@ pub fn add_flags(session: &mut Session, mailbox: &str, uid: u32, flags: Vec<Stri
     Ok(())
 }
 
+/// Remove flags from a message
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the message
+/// * `flags` - The flags to remove
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
 pub fn remove_flags(
     session: &mut Session,
     mailbox: &str,
     uid: u32,
-    flags: Vec<String>,
+    flags: Vec<&str>,
 ) -> Result<()> {
     session.select(mailbox)?;
 
-    let flags = flags
-        .iter()
-        .map(|flag| flag.to_string())
-        .collect::<Vec<String>>()
-        .join(" ");
+    let flags = flags.join(" ");
 
     println!("Removing flags: {}", flags);
 
     session.uid_store(uid.to_string(), format!("-FLAGS ({})", flags))?;
 
+    Ok(())
+}
+
+/// Move a message to another mailbox
+///
+/// # Arguments
+/// * `session` - The IMAP session
+/// * `mailbox` - The mailbox to select
+/// * `uid` - The UID of the message
+/// * `destination` - The destination mailbox
+/// # Returns
+/// * `Result<()>` - Ok if successful
+///
+pub fn move_mail(session: &mut Session, mailbox: &str, uid: u32, destination: &str) -> Result<()> {
+    session.select(mailbox)?;
+
+    session.uid_mv(uid.to_string(), destination)?;
     Ok(())
 }
 

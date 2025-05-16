@@ -15,7 +15,7 @@ export const load: PageLoad = async ({ params, depends }) => {
   }
 
   // Get the message for the uid
-  const message = await getMessage(account, mailbox, parseInt(uid, 10))
+  const message = getMessage(account, mailbox, parseInt(uid, 10))
 
   return {
     message,

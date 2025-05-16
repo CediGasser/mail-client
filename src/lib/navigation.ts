@@ -13,12 +13,12 @@ export function getLinkTo(
     // Remove the leading slash
     path = path.slice(1)
   }
-  const [currentAccount, currentMailbox, currentMessageUid] = path.split('/')
+  const [currentAccount, currentMailbox] = path.split('/')
 
   // If the account, mailbox, or messageUid is not provided, use the current ones
   account = account || currentAccount
   mailbox = mailbox || currentMailbox
-  let uid = messageUid?.toString() || (currentMessageUid as string)
+  let uid = messageUid?.toString() || ''
 
   // If the mailbox has changed, reset the messageUid
   if (mailbox !== currentMailbox) {
@@ -43,5 +43,6 @@ export async function navigateTo(
 ) {
   const link = await getLinkTo(account, mailbox, messageUid)
   // Use the goto function to navigate to the new link
-  goto(link)
+  console.log('Navigating to:', link)
+  await goto(link)
 }
