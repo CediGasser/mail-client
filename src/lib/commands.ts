@@ -50,7 +50,13 @@ export async function sendEmail(
   return invoke('send_email', { email, to, subject, body })
 }
 
-type Flag = '\\Seen' | '\\Answered' | '\\Flagged' | '\\Deleted' | '\\Draft'
+type Flag =
+  | '\\Seen'
+  | '\\Answered'
+  | '\\Flagged'
+  | '\\Deleted'
+  | '\\Draft'
+  | (string & {})
 
 export async function removeFlags(
   email: string,
