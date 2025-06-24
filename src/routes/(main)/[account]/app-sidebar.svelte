@@ -5,6 +5,7 @@
   import type { Mailbox } from '$lib/types'
   import { getMailboxIconComponent } from '$lib/utils'
   import type { Component } from 'svelte'
+  import PencilLine from '@lucide/svelte/icons/pencil-line'
 
   type MailboxWithIcon = Mailbox & {
     icon: Component
@@ -50,6 +51,13 @@
     </Sidebar.Group>
   </Sidebar.Content>
   <Sidebar.Footer>
-    <Button variant="default" href="/mail/new">Compose</Button>
+    <Sidebar.MenuButton>
+      {#snippet child({ props })}
+        <Button {...props} variant="default" href="/mail/new">
+          <PencilLine />
+          <span>Compose</span>
+        </Button>
+      {/snippet}
+    </Sidebar.MenuButton>
   </Sidebar.Footer>
 </Sidebar.Root>
