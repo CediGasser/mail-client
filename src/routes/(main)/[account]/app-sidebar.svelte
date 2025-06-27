@@ -2,7 +2,7 @@
   import { Button } from '$lib/components/ui/button'
   import * as Sidebar from '$lib/components/ui/sidebar/index.js'
   import { getLinkTo } from '$lib/navigation'
-  import type { Mailbox } from '$lib/types'
+  import type { Mailbox } from '$lib/mail/mailbox.svelte'
   import { getMailboxIconComponent } from '$lib/utils'
   import type { Component } from 'svelte'
   import PencilLine from '@lucide/svelte/icons/pencil-line'
@@ -12,19 +12,14 @@
   }
 
   interface Props {
+    email: string
     mailboxes: Mailbox[]
-    account: string
   }
-  let { mailboxes, account }: Props = $props()
+  let { email, mailboxes }: Props = $props()
 
-  const mailboxesWithIcons = mailboxes
-    .filter((mailbox) => !mailbox.attributes.includes('NoSelect'))
-    .map((mailbox) => {
-      return {
-        ...mailbox,
-        icon: getMailboxIconComponent(mailbox),
-      }
-    }) as MailboxWithIcon[]
+  const mailboxesWithIcons = mailboxes.filter(
+    (mailbox) => !mailbox.attributes.includes('NoSelect')
+  )
 </script>
 
 <Sidebar.Root variant="inset" collapsible="icon">
@@ -38,7 +33,7 @@
             <Sidebar.MenuItem>
               <Sidebar.MenuButton>
                 {#snippet child({ props })}
-                  <a href={getLinkTo(account, mailbox.name, null)} {...props}>
+                  <a href={getLinkTo(email, mailbox.name, null)} {...props}>
                     <mailbox.icon></mailbox.icon>
                     <span>{mailbox.display_name}</span>
                   </a>

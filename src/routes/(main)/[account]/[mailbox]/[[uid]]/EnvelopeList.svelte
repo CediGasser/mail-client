@@ -1,10 +1,10 @@
 <script lang="ts">
   import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte'
-  import type { Envelope } from '$lib/types'
+  import type { Message } from '$lib/mail/message.svelte'
   import EnvelopeComponent from './Envelope.svelte'
 
   interface Props {
-    items: Envelope[]
+    items: Message[]
     account: string
     search: string
   }
@@ -16,7 +16,7 @@
     return items.filter((envelope) => filterWith(envelope, search))
   })
 
-  function filterWith(envelope: Envelope, search: string) {
+  function filterWith(envelope: Message, search: string) {
     // Handle special search strings
     if (search === 'unread') {
       return !envelope.read
@@ -37,7 +37,7 @@
   <div class="flex flex-col gap-2 p-2">
     {#each filteredItems as item}
       <EnvelopeComponent
-        envelope={item}
+        message={item}
         selected={selectedEnvelopeUid === item.uid}
         {account}
       />

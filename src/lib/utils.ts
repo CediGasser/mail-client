@@ -27,8 +27,6 @@ export async function sleep(ms: number) {
 export function formatMailbox(mailbox: Mailbox): Mailbox {
   mailbox.display_name.replace('[Gmail]/', '')
 
-  console.log(mailbox)
-
   if (mailbox.name === 'INBOX') {
     return { ...mailbox, display_name: 'Inbox' }
   }

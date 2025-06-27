@@ -18,27 +18,30 @@
   import Trash from '@lucide/svelte/icons/trash'
   import { navigateTo } from '$lib/navigation'
   import Archive from '@lucide/svelte/icons/archive'
+  import { getAccount } from '$lib/mail/account.svelte'
 
   let { data } = $props()
+  let account = getAccount(data.email)
+  let mailbox = $derived(account.getMailbox(data.mailbox))
+  let message = $derived(data.uid && mailbox?.getMessage(data.uid))
 
   let search = $state('')
 
   const handleToggleFlagged = async (e: MouseEvent) => {
     e.preventDefault()
-    if (!data.message) return
-    const message = await data.message
+    if (!message) return
     try {
       if (message?.starred) {
         await removeFlags(
-          data.account,
-          message.mailbox_name,
+          account.email,
+          message.mailbox.name,
           message.uid,
           '\\Flagged'
         )
       } else {
         await addFlags(
-          data.account,
-          message.mailbox_name,
+          account.email,
+          message.mailbox.name,
           message.uid,
           '\\Flagged'
         )
@@ -51,12 +54,11 @@
 
   const handleDelete = async (e: MouseEvent) => {
     e.preventDefault()
-    if (!data.message) return
-    const message = await data.message
+    if (!message) return
     try {
-      await deleteMessage(data.account, message.mailbox_name, message.uid)
+      await deleteMessage(account.email, message.mailbox.name, message.uid)
 
-      await navigateTo(data.account, message.mailbox_name, null)
+      await navigateTo(account.email, message.mailbox.name, null)
 
       invalidate('data:envelopes')
       invalidate('data:message')
@@ -67,12 +69,11 @@
 
   const handleArchive = async (e: MouseEvent) => {
     e.preventDefault()
-    if (!data.message) return
-    const message = await data.message
+    if (!message) return
     try {
-      await archiveMessage(data.account, message.mailbox_name, message.uid)
+      await archiveMessage(account.email, message.mailbox.name, message.uid)
 
-      await navigateTo(data.account, message.mailbox_name, null)
+      await navigateTo(account.email, message.mailbox.name, null)
 
       invalidate('data:envelopes')
       invalidate('data:message')
@@ -88,7 +89,7 @@
       <div class="flex flex-row gap-3 items-center">
         <Sidebar.Trigger />
         <h2 class="text-2xl align-middle">
-          {data.mailbox?.display_name ?? 'Mailbox'}
+          {mailbox?.display_name ?? 'Mailbox'}
         </h2>
       </div>
       <Input
@@ -99,26 +100,26 @@
       />
     </header>
     <Separator />
-    {#await data.envelopes}
+    {#if mailbox?.syncState === 'syncing'}
       <div class="h-full flex items-center justify-center">
         <LoadingSpinner />
       </div>
-    {:then envelopes}
-      <EnvelopeList {search} account={data.account} items={envelopes} />
-    {:catch error}
-      <li class="error-msg">Error: {error.message}</li>
-    {/await}
+    {:else if mailbox?.messages}
+      <EnvelopeList
+        {search}
+        account={account.email}
+        items={mailbox?.messages}
+      />
+    {/if}
   </Resizable.Pane>
-  {#if data.message}
+  {#if message}
     <Resizable.Handle />
-  {/if}
-  {#if data.message}
     <Resizable.Pane minSize={20}>
-      {#await data.message}
+      {#if message.syncState === 'syncing'}
         <div class="h-full flex items-center justify-center">
           <LoadingSpinner />
         </div>
-      {:then message}
+      {:else if message.syncState === 'idle'}
         <header class="flex flex-row gap-3 p-2">
           <Button onclick={handleToggleFlagged} variant="outline">
             <Star fill={message.starred ? 'black' : 'transparent'} />
@@ -132,9 +133,9 @@
         </header>
         <Separator />
         <MessageComponent {message} />
-      {:catch error}
-        <li class="error-msg">Error: {error.message}</li>
-      {/await}
+      {:else if message.syncState === 'error'}
+        <li class="error-msg">Error</li>
+      {/if}
     </Resizable.Pane>
   {/if}
 </Resizable.PaneGroup>

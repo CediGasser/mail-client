@@ -1,24 +1,22 @@
 import type { PageLoad } from './$types'
-import { getMessage } from '$lib/commands'
+import { getAccount } from '$lib/mail/account.svelte'
 
-export const load: PageLoad = async ({ params, depends }) => {
-  depends('data:message')
+export const load: PageLoad = async ({ params }) => {
   const mailbox = decodeURIComponent(params.mailbox)
-  const uid = params.uid
-  const account = params.account
+  const uid = params.uid && parseInt(params.uid, 10)
+  const email = params.account
+
+  const account = getAccount(email)
 
   if (!uid) {
     return {
-      message: null,
       uid: null,
     }
   }
 
-  // Get the message for the uid
-  const message = getMessage(account, mailbox, parseInt(uid, 10))
+  account.getMailbox(mailbox)?.getMessage(uid)?.loadMessageBody()
 
   return {
-    message,
     uid,
   }
 }

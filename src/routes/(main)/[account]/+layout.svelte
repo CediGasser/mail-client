@@ -1,13 +1,15 @@
 <script lang="ts">
   import * as Sidebar from '$lib/components/ui/sidebar/index'
+  import { getAccount } from '$lib/mail/account.svelte'
   import AppSidebar from './app-sidebar.svelte'
+
   let { data, children } = $props()
 
-  let { mailboxes, account } = data
+  const account = getAccount(data.email)
 </script>
 
 <Sidebar.Provider>
-  <AppSidebar {mailboxes} {account}></AppSidebar>
+  <AppSidebar mailboxes={account.mailboxes} email={account.email}></AppSidebar>
   <Sidebar.Inset class="h-dvh">
     {@render children()}
   </Sidebar.Inset>

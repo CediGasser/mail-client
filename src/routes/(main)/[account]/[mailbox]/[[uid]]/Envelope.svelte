@@ -2,36 +2,31 @@
   import { invalidate } from '$app/navigation'
   import { addFlags, removeFlags } from '$lib/commands'
   import { getLinkTo } from '$lib/navigation'
-  import type { Envelope } from '$lib/types'
   import { formatTimeAgo } from '$lib/utils'
   import Star from '@lucide/svelte/icons/star'
   import Dot from '@lucide/svelte/icons/dot'
+  import type { Message } from '$lib/mail/message.svelte'
 
   interface Props {
     selected?: boolean
-    envelope: Envelope
+    message: Message
     account: string
   }
 
-  let { selected, envelope, account }: Props = $props()
+  let { selected, message, account }: Props = $props()
 
   const handleToggleFlagged = async (e: MouseEvent) => {
     e.preventDefault()
     try {
-      if (envelope.starred) {
+      if (message.starred) {
         await removeFlags(
           account,
-          envelope.mailbox_name,
-          envelope.uid,
+          message.mailbox.name,
+          message.uid,
           '\\Flagged'
         )
       } else {
-        await addFlags(
-          account,
-          envelope.mailbox_name,
-          envelope.uid,
-          '\\Flagged'
-        )
+        await addFlags(account, message.mailbox.name, message.uid, '\\Flagged')
       }
       invalidate('data:envelopes')
       invalidate('data:message')
@@ -45,33 +40,33 @@
 <a
   class="hover:bg-accent flex flex-col items-start gap-2 rounded-lg border p-3 text-left text-sm transition-all {selected ??
     'bg-muted'}"
-  href={getLinkTo(null, null, envelope.uid)}
+  href={getLinkTo(null, null, message.uid)}
 >
   <div class="flex flex-row w-full items-center justify-between">
     <div class="flex flex-row items-start gap-1">
-      {#if !envelope.read}
+      {#if !message.read}
         <Dot height="1" width="1" size="1rem" strokeWidth="10" color="blue" />
       {/if}
-      <span class="text-sm text-gray-500">{envelope.from}</span>
+      <span class="text-sm text-gray-500">{message.from}</span>
     </div>
     <div class="flex flex-row items-center gap-2">
       <span class="text-xs text-gray-500">
-        {formatTimeAgo(envelope.date)}
+        {formatTimeAgo(message.date)}
       </span>
-      <div class="star-container {envelope.starred ? 'starred' : ''}">
+      <div class="star-container {message.starred ? 'starred' : ''}">
         <button
-          class="p-0 m-0 rounded-sm border-none bg-transparent {envelope.starred
+          class="p-0 m-0 rounded-sm border-none bg-transparent {message.starred
             ? ''
             : 'text-gray-500 hover:text-black'} focus:outline-none"
           onclick={handleToggleFlagged}
         >
-          <Star size="1rem" fill={envelope.starred ? 'black' : 'transparent'} />
+          <Star size="1rem" fill={message.starred ? 'black' : 'transparent'} />
         </button>
       </div>
     </div>
   </div>
-  <h2 class="text-base {!envelope.read && 'font-semibold'}">
-    {envelope.subject}
+  <h2 class="text-base {!message.read && 'font-semibold'}">
+    {message.subject}
   </h2>
 </a>
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Separator } from '$lib/components/ui/separator'
-  import type { Message } from '$lib/types'
+  import type { Message } from '$lib/mail/message.svelte'
 
   interface Props {
     message: Message
