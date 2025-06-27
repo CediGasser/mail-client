@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button'
   import * as Card from '$lib/components/ui/card'
-  import LoadingSpinner from '$lib/components/custom/LoadingSpinner.svelte'
-  import Google from '$lib/components/custom/Google.svelte'
+  import LoadingSpinner from '$lib/components/custom/loading-spinner.svelte'
+  import Google from '$lib/components/custom/google.svelte'
   import Input from '$lib/components/ui/input/input.svelte'
   import { loginWithGoogle } from '$lib/commands'
 

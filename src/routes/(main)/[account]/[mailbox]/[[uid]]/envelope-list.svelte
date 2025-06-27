@@ -1,7 +1,7 @@
 <script lang="ts">
   import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte'
   import type { Message } from '$lib/mail/message.svelte'
-  import EnvelopeComponent from './Envelope.svelte'
+  import EnvelopeComponent from './envelope.svelte'
 
   interface Props {
     items: Message[]
