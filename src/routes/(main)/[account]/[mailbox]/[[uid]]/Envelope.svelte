@@ -14,7 +14,8 @@
 
   let starred = $derived(message.starred)
 
-  const handleToggleFlagged = async () => {
+  const handleToggleFlagged = async (e: Event) => {
+    e.preventDefault()
     await message.toggleStarred()
   }
 </script>

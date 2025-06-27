@@ -1,25 +1,28 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button'
   import * as Sidebar from '$lib/components/ui/sidebar/index.js'
-  import { getLinkTo } from '$lib/navigation'
-  import type { Mailbox } from '$lib/mail/mailbox.svelte'
-  import { getMailboxIconComponent } from '$lib/utils'
-  import type { Component } from 'svelte'
+  import { getLinkTo, navigateTo } from '$lib/navigation'
   import PencilLine from '@lucide/svelte/icons/pencil-line'
-
-  type MailboxWithIcon = Mailbox & {
-    icon: Component
-  }
+  import type { Account } from '$lib/mail/account.svelte'
+  import { MailboxAttribute } from '$lib/mail/mailbox.svelte'
+  import { goto } from '$app/navigation'
 
   interface Props {
-    email: string
-    mailboxes: Mailbox[]
+    account: Account
   }
-  let { email, mailboxes }: Props = $props()
+  let { account }: Props = $props()
 
-  const mailboxesWithIcons = mailboxes.filter(
+  const filteredMailboxes = account.mailboxes.filter(
     (mailbox) => !mailbox.attributes.includes('NoSelect')
   )
+
+  const handleCompose = () => {
+    const draftsMailboxName = account.searchMailboxByAttribute(
+      MailboxAttribute.DRAFTS
+    )?.name
+
+    goto('/mail/new')
+  }
 </script>
 
 <Sidebar.Root variant="inset" collapsible="icon">
@@ -29,11 +32,14 @@
       <Sidebar.GroupLabel>Mailboxes</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu>
-          {#each mailboxesWithIcons as mailbox}
+          {#each filteredMailboxes as mailbox}
             <Sidebar.MenuItem>
               <Sidebar.MenuButton>
                 {#snippet child({ props })}
-                  <a href={getLinkTo(email, mailbox.name, null)} {...props}>
+                  <a
+                    href={getLinkTo(account.email, mailbox.name, null)}
+                    {...props}
+                  >
                     <mailbox.icon></mailbox.icon>
                     <span>{mailbox.displayName}</span>
                   </a>
@@ -48,7 +54,7 @@
   <Sidebar.Footer>
     <Sidebar.MenuButton>
       {#snippet child({ props })}
-        <Button {...props} variant="default" href="/mail/new">
+        <Button {...props} variant="default" onclick={handleCompose}>
           <PencilLine />
           <span>Compose</span>
         </Button>

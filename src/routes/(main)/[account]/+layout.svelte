@@ -9,7 +9,7 @@
 </script>
 
 <Sidebar.Provider>
-  <AppSidebar mailboxes={account.mailboxes} email={account.email}></AppSidebar>
+  <AppSidebar {account}></AppSidebar>
   <Sidebar.Inset class="h-dvh">
     {@render children()}
   </Sidebar.Inset>
