@@ -1,4 +1,4 @@
-import { getMessage } from '$lib/commands'
+import { addFlags, getMessage, removeFlags } from '$lib/commands'
 import type { Mailbox } from './mailbox.svelte'
 
 export class Message {
@@ -7,10 +7,10 @@ export class Message {
   public uid: number
   public from: string
   public subject: string
-  public date: Date
-  public read: boolean
-  public starred: boolean
-  public body?: string
+  public date: Date = $state<Date>(new Date())
+  public read: boolean = $state(false)
+  public starred: boolean = $state(false)
+  public body?: string = $state<string | undefined>(undefined)
   public syncState: 'idle' | 'syncing' | 'error' | 'initial' = $state('initial')
 
   constructor(
@@ -33,6 +33,26 @@ export class Message {
     this.body = body
   }
 
+  public async toggleStarred() {
+    if (this.starred) {
+      await removeFlags(
+        this.mailbox.account.email,
+        this.mailbox.name,
+        this.uid,
+        '\\Flagged'
+      )
+      this.starred = false
+    } else {
+      await addFlags(
+        this.mailbox.account.email,
+        this.mailbox.name,
+        this.uid,
+        '\\Flagged'
+      )
+      this.starred = true
+    }
+  }
+
   public async loadMessageBody() {
     if (this.body) {
       return this.body
@@ -48,13 +68,8 @@ export class Message {
         this.uid
       )
 
-      console.log('Loaded message:', message)
-
-      if (message) {
-        this.body = message.body || 'No body content available.'
-      } else {
-        this.body = 'Message not found.'
-      }
+      this.read = message.read || false
+      this.body = message.body || 'No body content available.'
     } catch (error) {
       this.syncState = 'error'
       console.error('Failed to load message body:', error)

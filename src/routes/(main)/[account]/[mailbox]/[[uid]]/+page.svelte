@@ -7,13 +7,6 @@
   import Separator from '$lib/components/ui/separator/separator.svelte'
   import Star from '@lucide/svelte/icons/star'
   import MessageComponent from './Message.svelte'
-  import {
-    addFlags,
-    archiveMessage,
-    deleteMessage,
-    removeFlags,
-  } from '$lib/commands'
-  import { invalidate } from '$app/navigation'
   import { Input } from '$lib/components/ui/input'
   import Trash from '@lucide/svelte/icons/trash'
   import { navigateTo } from '$lib/navigation'
@@ -23,60 +16,35 @@
   let { data } = $props()
   let account = getAccount(data.email)
   let mailbox = $derived(account.getMailbox(data.mailbox))
-  let message = $derived(data.uid && mailbox?.getMessage(data.uid))
+  let message = $derived(
+    data.uid !== null ? mailbox?.getMessage(data.uid) : undefined
+  )
+  let starred = $derived(message?.starred ?? false)
 
   let search = $state('')
 
-  const handleToggleFlagged = async (e: MouseEvent) => {
-    e.preventDefault()
+  const handleToggleFlagged = async () => {
     if (!message) return
-    try {
-      if (message?.starred) {
-        await removeFlags(
-          account.email,
-          message.mailbox.name,
-          message.uid,
-          '\\Flagged'
-        )
-      } else {
-        await addFlags(
-          account.email,
-          message.mailbox.name,
-          message.uid,
-          '\\Flagged'
-        )
-      }
-      invalidate('data:message')
-    } catch (error) {
-      console.error('Error toggling star:', error)
-    }
+    await message.toggleStarred()
   }
 
-  const handleDelete = async (e: MouseEvent) => {
-    e.preventDefault()
+  const handleDelete = async () => {
     if (!message) return
     try {
-      await deleteMessage(account.email, message.mailbox.name, message.uid)
+      await mailbox?.deleteMessage(message.uid)
 
       await navigateTo(account.email, message.mailbox.name, null)
-
-      invalidate('data:envelopes')
-      invalidate('data:message')
     } catch (error) {
       console.error('Error deleting message:', error)
     }
   }
 
-  const handleArchive = async (e: MouseEvent) => {
-    e.preventDefault()
+  const handleArchive = async () => {
     if (!message) return
     try {
-      await archiveMessage(account.email, message.mailbox.name, message.uid)
+      await mailbox?.archiveMessage(message.uid)
 
       await navigateTo(account.email, message.mailbox.name, null)
-
-      invalidate('data:envelopes')
-      invalidate('data:message')
     } catch (error) {
       console.error('Error archiving message:', error)
     }
@@ -89,7 +57,7 @@
       <div class="flex flex-row gap-3 items-center">
         <Sidebar.Trigger />
         <h2 class="text-2xl align-middle">
-          {mailbox?.display_name ?? 'Mailbox'}
+          {mailbox?.displayName ?? 'Mailbox'}
         </h2>
       </div>
       <Input
@@ -105,11 +73,7 @@
         <LoadingSpinner />
       </div>
     {:else if mailbox?.messages}
-      <EnvelopeList
-        {search}
-        account={account.email}
-        items={mailbox?.messages}
-      />
+      <EnvelopeList {search} items={mailbox?.messages} />
     {/if}
   </Resizable.Pane>
   {#if message}
@@ -122,7 +86,7 @@
       {:else if message.syncState === 'idle'}
         <header class="flex flex-row gap-3 p-2">
           <Button onclick={handleToggleFlagged} variant="outline">
-            <Star fill={message.starred ? 'black' : 'transparent'} />
+            <Star fill={starred ? 'black' : 'transparent'} />
           </Button>
           <Button onclick={handleArchive} variant="outline">
             <Archive />

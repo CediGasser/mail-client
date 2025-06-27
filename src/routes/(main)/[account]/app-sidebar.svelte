@@ -35,7 +35,7 @@
                 {#snippet child({ props })}
                   <a href={getLinkTo(email, mailbox.name, null)} {...props}>
                     <mailbox.icon></mailbox.icon>
-                    <span>{mailbox.display_name}</span>
+                    <span>{mailbox.displayName}</span>
                   </a>
                 {/snippet}
               </Sidebar.MenuButton>

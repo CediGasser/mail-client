@@ -24,36 +24,6 @@ export async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export function formatMailbox(mailbox: Mailbox): Mailbox {
-  mailbox.display_name.replace('[Gmail]/', '')
-
-  if (mailbox.name === 'INBOX') {
-    return { ...mailbox, display_name: 'Inbox' }
-  }
-  if (mailbox.attributes.includes('\\All')) {
-    return { ...mailbox, display_name: 'All' }
-  }
-  if (mailbox.attributes.includes('\\Drafts')) {
-    return { ...mailbox, display_name: 'Drafts' }
-  }
-  if (mailbox.attributes.includes('\\Sent')) {
-    return { ...mailbox, display_name: 'Sent' }
-  }
-  if (mailbox.attributes.includes('\\Flagged')) {
-    return { ...mailbox, display_name: 'Flagged' }
-  }
-  if (mailbox.attributes.includes('\\Trash')) {
-    return { ...mailbox, display_name: 'Trash' }
-  }
-  if (mailbox.attributes.includes('\\Junk')) {
-    return { ...mailbox, display_name: 'Junk' }
-  }
-  if (mailbox.attributes.includes('\\Important')) {
-    return { ...mailbox, display_name: 'Important' }
-  }
-  return { ...mailbox }
-}
-
 export function getMailboxIconComponent(mailbox: Mailbox): Component {
   if (mailbox.name === 'INBOX') {
     return Mail

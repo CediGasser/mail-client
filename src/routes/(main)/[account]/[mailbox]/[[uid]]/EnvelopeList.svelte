@@ -5,11 +5,10 @@
 
   interface Props {
     items: Message[]
-    account: string
     search: string
   }
 
-  let { items, account, search }: Props = $props()
+  let { items, search }: Props = $props()
   let selectedEnvelopeUid: number | null = $state(null)
 
   let filteredItems = $derived.by(() => {
@@ -39,7 +38,6 @@
       <EnvelopeComponent
         message={item}
         selected={selectedEnvelopeUid === item.uid}
-        {account}
       />
     {/each}
   </div>

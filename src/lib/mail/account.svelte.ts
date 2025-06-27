@@ -1,7 +1,6 @@
 import { SvelteMap } from 'svelte/reactivity'
 import { Mailbox } from './mailbox.svelte'
 import { getMailboxes } from '$lib/commands'
-import { formatMailbox } from '$lib/utils'
 
 const accounts: Map<string, Account> = new Map()
 
@@ -24,11 +23,17 @@ export class Account {
     return this.#mailboxes.get(name)
   }
 
+  public searchMailboxByAttribute(attribute: string): Mailbox | undefined {
+    return this.mailboxes.find((mailbox) =>
+      mailbox.attributes.includes(attribute)
+    )
+  }
+
   public async syncMailboxes() {
     this.syncState = 'syncing'
 
     try {
-      const mailboxes = (await getMailboxes(this.email)).map(formatMailbox)
+      const mailboxes = await getMailboxes(this.email)
 
       this.#mailboxes.clear()
 

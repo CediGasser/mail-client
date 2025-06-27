@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { invalidate } from '$app/navigation'
-  import { addFlags, removeFlags } from '$lib/commands'
   import { getLinkTo } from '$lib/navigation'
   import { formatTimeAgo } from '$lib/utils'
   import Star from '@lucide/svelte/icons/star'
@@ -10,30 +8,14 @@
   interface Props {
     selected?: boolean
     message: Message
-    account: string
   }
 
-  let { selected, message, account }: Props = $props()
+  let { selected, message }: Props = $props()
 
-  const handleToggleFlagged = async (e: MouseEvent) => {
-    e.preventDefault()
-    try {
-      if (message.starred) {
-        await removeFlags(
-          account,
-          message.mailbox.name,
-          message.uid,
-          '\\Flagged'
-        )
-      } else {
-        await addFlags(account, message.mailbox.name, message.uid, '\\Flagged')
-      }
-      invalidate('data:envelopes')
-      invalidate('data:message')
-    } catch (error) {
-      console.error('Error toggling star:', error)
-      return
-    }
+  let starred = $derived(message.starred)
+
+  const handleToggleFlagged = async () => {
+    await message.toggleStarred()
   }
 </script>
 
@@ -53,14 +35,14 @@
       <span class="text-xs text-gray-500">
         {formatTimeAgo(message.date)}
       </span>
-      <div class="star-container {message.starred ? 'starred' : ''}">
+      <div class="star-container {starred ? 'starred' : ''}">
         <button
-          class="p-0 m-0 rounded-sm border-none bg-transparent {message.starred
+          class="p-0 m-0 rounded-sm border-none bg-transparent {starred
             ? ''
             : 'text-gray-500 hover:text-black'} focus:outline-none"
           onclick={handleToggleFlagged}
         >
-          <Star size="1rem" fill={message.starred ? 'black' : 'transparent'} />
+          <Star size="1rem" fill={starred ? 'black' : 'transparent'} />
         </button>
       </div>
     </div>
