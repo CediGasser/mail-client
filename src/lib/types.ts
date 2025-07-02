@@ -7,21 +7,32 @@ export type Mailbox = {
 
 export interface Envelope {
   uid: number
-  from: string
-  subject: string
   date: Date
-  read?: boolean
-  starred?: boolean
+  from: EmailAddress[]
+  to: EmailAddress[]
+  cc: EmailAddress[]
+  bcc: EmailAddress[]
+  subject: string
+  headers: Record<string, string>
+  flags: Flag[]
   mailbox_name: string
 }
+
+export type Flag =
+  | '\\Seen'
+  | '\\Answered'
+  | '\\Flagged'
+  | '\\Deleted'
+  | '\\Draft'
+  | (string & {})
 
 export interface Message extends Envelope {
   body: string
 }
 
-export type Address = {
-  name: string
-  email: string
+export type EmailAddress = {
+  name: string | null
+  address: string
 }
 
 export type Account = {

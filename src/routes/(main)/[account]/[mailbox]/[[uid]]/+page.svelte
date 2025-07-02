@@ -7,6 +7,7 @@
   import Separator from '$lib/components/ui/separator/separator.svelte'
   import Star from '@lucide/svelte/icons/star'
   import MessageComponent from './message.svelte'
+  import MessageEditor from './message-editor.svelte'
   import { Input } from '$lib/components/ui/input'
   import Trash from '@lucide/svelte/icons/trash'
   import { navigateTo } from '$lib/navigation'
@@ -19,13 +20,13 @@
   let message = $derived(
     data.uid !== null ? mailbox?.getMessage(data.uid) : undefined
   )
-  let starred = $derived(message?.starred ?? false)
+  let starred = $derived(message?.flagged ?? false)
 
   let search = $state('')
 
   const handleToggleFlagged = async () => {
     if (!message) return
-    await message.toggleStarred()
+    await message.toggleFlagged()
   }
 
   const handleDelete = async () => {
@@ -83,7 +84,15 @@
         <div class="h-full flex items-center justify-center">
           <LoadingSpinner />
         </div>
-      {:else if message.syncState === 'idle'}
+      {:else if message.syncState === 'idle' && message.draft}
+        <header class="flex flex-row gap-3 p-2">
+          <Button onclick={handleDelete} variant="outline">
+            <Trash />
+          </Button>
+        </header>
+        <Separator />
+        <MessageEditor {message} />
+      {:else if message.syncState === 'idle' && !message.draft}
         <header class="flex flex-row gap-3 p-2">
           <Button onclick={handleToggleFlagged} variant="outline">
             <Star fill={starred ? 'black' : 'transparent'} />

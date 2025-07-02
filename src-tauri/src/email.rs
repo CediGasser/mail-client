@@ -1,26 +1,37 @@
 use crate::error::{Error, Result};
-use std::net::TcpStream;
+use std::{collections::HashMap, net::TcpStream};
+use tauri::utils::config::parse;
 use utf7_imap::decode_utf7_imap;
 
-use imap::types::{Flag, NameAttribute};
+use imap::types::NameAttribute;
 use imap::Authenticator;
-use mail_parser::MessageParser;
+use mail_parser::{Address, MessageParser};
 use native_tls::TlsStream;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::constants::{GOOGLE_IMAP_HOST, GOOGLE_IMAP_PORT};
 
 pub type Session = imap::Session<TlsStream<TcpStream>>;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmailAddress {
+    pub name: Option<String>,
+    pub address: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Envelope {
-    uid: Option<u32>,
-    date: Option<String>,
-    from: Option<String>,
-    subject: Option<String>,
-    read: bool,
-    starred: bool,
-    mailbox_name: String,
+    pub uid: Option<u32>,
+    pub date: Option<String>,
+    pub from: Vec<EmailAddress>,
+    pub to: Vec<EmailAddress>,
+    pub cc: Vec<EmailAddress>,
+    pub bcc: Vec<EmailAddress>,
+    pub subject: Option<String>,
+    pub headers: HashMap<String, String>,
+    pub flags: Vec<String>,
+    pub mailbox_name: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -33,14 +44,17 @@ pub struct Mailbox {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Message {
-    body: String,
-    uid: Option<u32>,
-    date: Option<String>,
-    from: Option<String>,
-    subject: Option<String>,
-    read: bool,
-    starred: bool,
-    mailbox_name: String,
+    pub uid: Option<u32>,
+    pub date: Option<String>,
+    pub from: Vec<EmailAddress>,
+    pub to: Vec<EmailAddress>,
+    pub cc: Vec<EmailAddress>,
+    pub bcc: Vec<EmailAddress>,
+    pub subject: Option<String>,
+    pub headers: HashMap<String, String>,
+    pub flags: Vec<String>,
+    pub mailbox_name: String,
+    pub body: String,
 }
 
 /// Get the list of mailboxes
@@ -93,10 +107,8 @@ pub fn get_mailboxes(session: &mut Session) -> Result<Vec<Mailbox>> {
 ///
 pub fn get_envelopes(session: &mut Session, mailbox: &str) -> Result<Vec<Envelope>> {
     session.select(mailbox)?;
-
     let responses = session.fetch("1:*", "(UID FLAGS RFC822.HEADER)")?;
-
-    let parser = &MessageParser::new();
+    let parser = MessageParser::default();
 
     let envelopes = responses
         .iter()
@@ -105,27 +117,30 @@ pub fn get_envelopes(session: &mut Session, mailbox: &str) -> Result<Vec<Envelop
             let message = parser.parse(header_bytes)?;
             let uid = fetch.uid;
             let date = message.date().map(|d| d.to_string());
-            let from = message
-                .from()
-                .map(|f| f.first().unwrap().name().map(|n| n.to_string()))
-                .flatten();
-            let subject = message.subject().map(|s| s.to_string());
-            let read = fetch.flags().contains(&Flag::Seen);
-            let starred = fetch.flags().contains(&Flag::Flagged);
-            let mailbox_name = mailbox.to_string();
 
-            let envelope = Envelope {
-                uid: uid,
+            Some(Envelope {
+                uid,
                 date,
-                from,
-                subject,
-                read,
-                starred,
-                mailbox_name,
-            };
-            Some(envelope)
+                from: parse_addrs(message.from()).unwrap_or_default(),
+                to: parse_addrs(message.to()).unwrap_or_default(),
+                cc: parse_addrs(message.cc()).unwrap_or_default(),
+                bcc: parse_addrs(message.bcc()).unwrap_or_default(),
+                subject: message.subject().map(|s| s.to_string()),
+                headers: message
+                    .headers()
+                    .iter()
+                    .map(|h| {
+                        (
+                            h.name().to_string(),
+                            h.value().as_text().unwrap_or_default().to_string(),
+                        )
+                    })
+                    .collect(),
+                flags: fetch.flags().iter().map(|f| f.to_string()).collect(),
+                mailbox_name: mailbox.to_string(),
+            })
         })
-        .collect::<Vec<Envelope>>();
+        .collect();
 
     Ok(envelopes)
 }
@@ -144,56 +159,45 @@ pub fn get_message(session: &mut Session, mailbox: &str, uid: u32) -> Result<Mes
 
     let response = session.uid_fetch(uid.to_string(), "(UID FLAGS RFC822)")?;
 
-    let parser = &MessageParser::new();
-
-    let response = response
+    let message = response
         .first()
-        .ok_or(Error::from("Could not get mail content".to_string()))?;
+        .ok_or(Error::from("Could not get mail content"))?;
 
-    let message_bytes = response
+    let body = message
         .body()
         .ok_or(Error::from("Message is missing body"))?;
 
-    let message = parser
-        .parse(message_bytes)
-        .ok_or(Error::from("Could not parse message"))?;
+    let parser = MessageParser::new();
 
-    let uid = response.uid;
-    let date = message.date().map(|d| d.to_string());
-    let from = message
-        .from()
-        .map(|f| f.first().unwrap().name().map(|n| n.to_string()))
-        .flatten();
-    let subject = message.subject().map(|s| s.to_string());
-    let read = response.flags().contains(&Flag::Seen);
-    let starred = response.flags().contains(&Flag::Flagged);
-    let mailbox_name = mailbox.to_string();
+    let parsed = parser.parse(body).ok_or("Could not parse message")?;
 
-    let body = response
-        .body()
-        .ok_or(Error::from("No body found".to_string()))?;
-
-    let html = MessageParser::default()
-        .parse(body)
-        .ok_or(Error::from("Could not parse email message".to_string()))?
+    let html = parsed
         .body_html(0)
-        .ok_or(Error::from(
-            "Could not get text content of root part".to_string(),
-        ))?
-        .to_string();
+        .map(|s| s.to_string())
+        .unwrap_or_default();
 
-    let message = Message {
+    Ok(Message {
+        uid: message.uid,
+        date: parsed.date().map(|d| d.to_string()),
+        from: parse_addrs(parsed.from()).unwrap_or_default(),
+        to: parse_addrs(parsed.to()).unwrap_or_default(),
+        cc: parse_addrs(parsed.cc()).unwrap_or_default(),
+        bcc: parse_addrs(parsed.bcc()).unwrap_or_default(),
+        subject: parsed.subject().map(|s| s.to_string()),
+        headers: parsed
+            .headers()
+            .iter()
+            .map(|h| {
+                (
+                    h.name().to_string(),
+                    h.value().as_text().unwrap_or_default().to_string(),
+                )
+            })
+            .collect(),
+        flags: message.flags().iter().map(|f| f.to_string()).collect(),
+        mailbox_name: mailbox.to_string(),
         body: html,
-        uid,
-        date,
-        from,
-        subject,
-        read,
-        starred,
-        mailbox_name,
-    };
-
-    Ok(message)
+    })
 }
 
 /// Add flags to a message
@@ -280,4 +284,109 @@ pub fn get_imap_session(auth: impl Authenticator) -> Result<Session> {
     let session = client.authenticate("XOAUTH2", &auth).map_err(|e| e.0)?;
 
     Ok(session)
+}
+
+/// Save a draft message
+///
+/// # Arguments
+/// * `imap_session` - The IMAP session
+/// * `mailbox` - The mailbox to save the draft in
+/// * `uid` - The UID of the draft to update, if any
+/// * `subject` - The subject of the draft
+/// * `body` - The body of the draft
+/// # Returns
+/// * `Result<u32>` - The new UID of the saved draft
+///
+pub fn save_draft(
+    imap_session: &mut Session,
+    mailbox: &str,
+    uid: Option<u32>,
+    subject: Option<&str>,
+    body: Option<&str>,
+    to: Option<Vec<EmailAddress>>,
+    cc: Option<Vec<EmailAddress>>,
+    bcc: Option<Vec<EmailAddress>>,
+) -> Result<u32> {
+    // Select the mailbox
+    imap_session.select(mailbox)?;
+
+    // If UID is provided, fetch and delete the existing draft
+    if let Some(uid) = uid {
+        let fetch_result = imap_session.uid_fetch(uid.to_string(), "RFC822")?;
+        if fetch_result.is_empty() {
+            return Err(Error::from("Draft not found"));
+        }
+
+        // Delete the existing draft
+        imap_session.uid_store(uid.to_string(), "+FLAGS (\\Deleted)")?;
+        imap_session.expunge()?;
+    }
+
+    // Generate a unique Message-ID
+    let message_id = format!("<{}@mail-client>", Uuid::new_v4());
+
+    // Create the raw email content
+    let mut raw_email = format!(
+        "Message-ID: {}\r\nSubject: {}\r\n",
+        message_id,
+        subject.unwrap_or("")
+    );
+
+    if let Some(to) = to {
+        raw_email.push_str(&format!("To: {}\r\n", parse_addrs_to_string(to)));
+    }
+    if let Some(cc) = cc {
+        raw_email.push_str(&format!("Cc: {}\r\n", parse_addrs_to_string(cc)));
+    }
+    if let Some(bcc) = bcc {
+        raw_email.push_str(&format!("Bcc: {}\r\n", parse_addrs_to_string(bcc)));
+    }
+
+    raw_email.push_str(&format!("\r\n{}", body.unwrap_or("")));
+
+    // Append the new draft to the mailbox
+    imap_session.append(mailbox, raw_email.as_bytes())?;
+
+    // Search for the newly created draft using the Message-ID
+    imap_session.select(mailbox)?;
+    let uids = imap_session.uid_search(format!("HEADER Message-ID {}", message_id))?;
+    if let Some(new_uid) = uids.iter().max() {
+        // Set the \Draft flag for the new draft
+        imap_session.uid_store(new_uid.to_string(), "+FLAGS (\\Draft)")?;
+        Ok(*new_uid)
+    } else {
+        Err(Error::from("Failed to retrieve UID of the new draft"))
+    }
+}
+
+fn parse_addrs_to_string(addrs: Vec<EmailAddress>) -> String {
+    addrs
+        .into_iter()
+        .map(|addr| {
+            if let Some(name) = addr.name {
+                format!("{} <{}>", name, addr.address)
+            } else {
+                addr.address
+            }
+        })
+        .collect::<Vec<String>>()
+        .join(", ")
+}
+
+fn parse_addrs<'x>(addrs: Option<&Address<'x>>) -> Option<Vec<EmailAddress>> {
+    let addr = addrs?;
+    Some(
+        addr.iter()
+            .filter_map(|addr| {
+                if let Some(email) = &addr.address {
+                    Some(EmailAddress {
+                        name: addr.name().map(|n| n.to_string()),
+                        address: addr.address().map(|a| a.to_string()).unwrap_or_default(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect(),
+    )
 }

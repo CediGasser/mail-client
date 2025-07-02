@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AddressDisplay from '$lib/components/custom/address-display.svelte'
   import { Separator } from '$lib/components/ui/separator'
   import type { Message } from '$lib/mail/message.svelte'
 
@@ -11,7 +12,7 @@
 <div class="m-2 h-full border rounded-lg shadow-md bg-white">
   <header class="flex flex-col justify-between items-start p-3">
     <div class="flex flex-row justify-between items-center w-full">
-      <span class="text-sm text-gray-500">{message.from}</span>
+      <AddressDisplay addresses={message.from} />
       <span class="text-xs text-gray-500">
         {new Date(message.date).toLocaleString()}
       </span>

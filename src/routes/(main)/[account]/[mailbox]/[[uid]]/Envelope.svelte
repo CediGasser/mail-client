@@ -4,6 +4,7 @@
   import Star from '@lucide/svelte/icons/star'
   import Dot from '@lucide/svelte/icons/dot'
   import type { Message } from '$lib/mail/message.svelte'
+  import AddressDisplay from '$lib/components/custom/address-display.svelte'
 
   interface Props {
     selected?: boolean
@@ -12,25 +13,29 @@
 
   let { selected, message }: Props = $props()
 
-  let starred = $derived(message.starred)
+  let starred = $derived(message.flagged)
 
   const handleToggleFlagged = async (e: Event) => {
     e.preventDefault()
-    await message.toggleStarred()
+    await message.toggleFlagged()
   }
 </script>
 
 <a
   class="hover:bg-accent flex flex-col items-start gap-2 rounded-lg border p-3 text-left text-sm transition-all {selected ??
     'bg-muted'}"
-  href={getLinkTo(null, null, message.uid)}
+  href={getLinkTo(null, null, message.uid ?? null)}
 >
   <div class="flex flex-row w-full items-center justify-between">
     <div class="flex flex-row items-start gap-1">
-      {#if !message.read}
+      {#if !message.seen}
         <Dot height="1" width="1" size="1rem" strokeWidth="10" color="blue" />
       {/if}
-      <span class="text-sm text-gray-500">{message.from}</span>
+      {#if message.draft}
+        <AddressDisplay addresses={message.to} />
+      {:else}
+        <AddressDisplay addresses={message.from} />
+      {/if}
     </div>
     <div class="flex flex-row items-center gap-2">
       <span class="text-xs text-gray-500">
@@ -48,7 +53,7 @@
       </div>
     </div>
   </div>
-  <h2 class="text-base {!message.read && 'font-semibold'}">
+  <h2 class="text-base {!message.seen && 'font-semibold'}">
     {message.subject}
   </h2>
 </a>

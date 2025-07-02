@@ -18,10 +18,10 @@
   function filterWith(envelope: Message, search: string) {
     // Handle special search strings
     if (search === 'unread') {
-      return !envelope.read
+      return !envelope.seen
     }
     if (search === 'flagged') {
-      return envelope.starred
+      return envelope.flagged
     }
     if (!search) return true
     const searchLower = search.toLowerCase()

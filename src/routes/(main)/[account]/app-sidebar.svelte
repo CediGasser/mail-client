@@ -6,6 +6,8 @@
   import type { Account } from '$lib/mail/account.svelte'
   import { MailboxAttribute } from '$lib/mail/mailbox.svelte'
   import { goto } from '$app/navigation'
+  import { saveDraft } from '$lib/commands'
+  import { Message } from '$lib/mail/message.svelte'
 
   interface Props {
     account: Account
@@ -16,12 +18,23 @@
     (mailbox) => !mailbox.attributes.includes('NoSelect')
   )
 
-  const handleCompose = () => {
-    const draftsMailboxName = account.searchMailboxByAttribute(
+  const handleCompose = async () => {
+    const draftsMailbox = account.searchMailboxByAttribute(
       MailboxAttribute.DRAFTS
-    )?.name
+    )
 
-    goto('/mail/new')
+    if (!draftsMailbox) {
+      console.error('Drafts mailbox not found')
+      return
+    }
+
+    try {
+      const uid = await Message.draft(draftsMailbox)
+
+      await navigateTo(account.email, draftsMailbox.name, uid ?? null)
+    } catch (error) {
+      console.error('Error creating draft:', error)
+    }
   }
 </script>
 

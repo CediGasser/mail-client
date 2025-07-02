@@ -1,9 +1,10 @@
 use crate::auth::init_google_oauth_flow;
 use crate::config::{Account, Config};
 use crate::constants::GOOGLE_SMTP_HOST;
-use crate::email::{self, Envelope, Mailbox};
+use crate::email::{self, EmailAddress, Envelope, Mailbox};
 use crate::error::{Error, ErrorKind, Result};
 use crate::AppState;
+use lettre::message::Mailbox as LettreMailbox;
 use lettre::transport::smtp::authentication::Mechanism;
 use lettre::{message::header::ContentType, Message, SmtpTransport, Transport};
 use tauri::async_runtime::Mutex;
@@ -199,28 +200,67 @@ pub async fn archive_message(
 #[tauri::command]
 pub async fn send_email(
     handle: tauri::AppHandle,
-    email: &str,
-    to: &str,
+    from: &str,
+    to: Vec<EmailAddress>,
+    cc: Vec<EmailAddress>,
+    bcc: Vec<EmailAddress>,
     subject: &str,
     body: &str,
 ) -> Result<String> {
     let app_state_mutex = handle.state::<Mutex<AppState>>();
     let mut app_state = app_state_mutex.lock().await;
     let account = app_state
-        .get_account(email)
+        .get_account(from)
         .ok_or(Error::from("Account not found"))?;
     let auth = &account.credentials;
     let domain = GOOGLE_SMTP_HOST;
 
-    let message = Message::builder()
-        .from(
-            email
-                .parse()
-                .expect(format!("Failed to parse sender email: {}", email).as_str()),
-        )
-        .to(to
-            .parse()
-            .expect(format!("Failed to parse recipient email: {}", to).as_str()))
+    let to: Vec<LettreMailbox> = to
+        .into_iter()
+        .map(|email| {
+            LettreMailbox::new(
+                email.name,
+                email.address.parse().expect("Invalid email address"),
+            )
+        })
+        .collect();
+
+    let cc: Vec<LettreMailbox> = cc
+        .into_iter()
+        .map(|email| {
+            LettreMailbox::new(
+                email.name,
+                email.address.parse().expect("Invalid email address"),
+            )
+        })
+        .collect();
+
+    let bcc: Vec<LettreMailbox> = bcc
+        .into_iter()
+        .map(|email| {
+            LettreMailbox::new(
+                email.name,
+                email.address.parse().expect("Invalid email address"),
+            )
+        })
+        .collect();
+
+    let mut message = Message::builder().from(
+        from.parse()
+            .expect(format!("Failed to parse sender email: {}", from).as_str()),
+    );
+
+    for recipient in to {
+        message = message.to(recipient);
+    }
+    for recipient in cc {
+        message = message.cc(recipient);
+    }
+    for recipient in bcc {
+        message = message.bcc(recipient);
+    }
+
+    let message = message
         .subject(subject)
         .header(ContentType::TEXT_PLAIN)
         .body(body.to_string())
@@ -234,4 +274,29 @@ pub async fn send_email(
 
     let result = mailer.send(&message)?;
     Ok(result.code().to_string())
+}
+
+#[tauri::command]
+pub async fn save_draft(
+    handle: tauri::AppHandle,
+    email: &str,
+    mailbox: &str,
+    uid: Option<u32>,
+    subject: Option<&str>,
+    body: Option<&str>,
+    to: Option<Vec<EmailAddress>>,
+    cc: Option<Vec<EmailAddress>>,
+    bcc: Option<Vec<EmailAddress>>,
+) -> Result<u32> {
+    let app_state_mutex = handle.state::<Mutex<AppState>>();
+    let mut app_state = app_state_mutex.lock().await;
+    let account = app_state
+        .get_account(email)
+        .ok_or(Error::from("Account not found"))?;
+    let imap_session = account.get_imap_session().await?;
+
+    // Save the draft (create new or update existing)
+    let new_uid = email::save_draft(imap_session, mailbox, uid, subject, body, to, cc, bcc)?;
+
+    Ok(new_uid)
 }

@@ -63,11 +63,14 @@ export class Mailbox {
         return new Message(
           this,
           envelope.uid,
-          envelope.from,
-          envelope.subject,
           envelope.date,
-          envelope.read,
-          envelope.starred
+          envelope.from,
+          envelope.to,
+          envelope.cc,
+          envelope.bcc,
+          envelope.subject,
+          envelope.headers,
+          envelope.flags
         )
       })
     } catch (error) {

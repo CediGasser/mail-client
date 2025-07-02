@@ -20,11 +20,6 @@ export function getLinkTo(
   mailbox = mailbox || currentMailbox
   let uid = messageUid?.toString() || ''
 
-  // If the mailbox has changed, reset the messageUid
-  if (mailbox !== currentMailbox) {
-    uid = ''
-  }
-
   // If the account has changed, reset the mailbox and messageUid
   if (account !== currentAccount) {
     mailbox = 'INBOX'

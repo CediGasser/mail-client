@@ -1,5 +1,12 @@
 import { invoke } from '@tauri-apps/api/core'
-import type { AccountConfig, Envelope, Mailbox, Message } from '$lib/types'
+import type {
+  Flag,
+  AccountConfig,
+  Envelope,
+  Mailbox,
+  Message,
+  EmailAddress,
+} from '$lib/types'
 
 export async function getConfig(): Promise<AccountConfig> {
   return invoke<AccountConfig>('get_config')
@@ -25,7 +32,12 @@ export async function getEnvelopes(
   email: string,
   mailbox: string
 ): Promise<Envelope[]> {
-  let envelopes = await invoke<Envelope[]>('get_envelopes', { email, mailbox })
+  const envelopes = await invoke<Envelope[]>('get_envelopes', {
+    email,
+    mailbox,
+  })
+
+  console.log('Envelopes:', envelopes)
 
   return envelopes.map((envelope) => ({
     ...envelope,
@@ -38,25 +50,25 @@ export async function getMessage(
   mailbox: string,
   uid: number
 ): Promise<Message> {
-  return invoke<Message>('get_message', { email, mailbox, uid })
+  const message = await invoke<Message>('get_message', { email, mailbox, uid })
+
+  // Ensure the date is a Date object
+  if (typeof message.date === 'string') {
+    message.date = new Date(message.date)
+  }
+  return message
 }
 
 export async function sendEmail(
-  email: string,
-  to: string,
+  from: string,
+  to: EmailAddress[],
+  cc: EmailAddress[] = [],
+  bcc: EmailAddress[] = [],
   subject: string,
   body: string
 ): Promise<string> {
-  return invoke('send_email', { email, to, subject, body })
+  return invoke('send_email', { from, to, cc, bcc, subject, body })
 }
-
-type Flag =
-  | '\\Seen'
-  | '\\Answered'
-  | '\\Flagged'
-  | '\\Deleted'
-  | '\\Draft'
-  | (string & {})
 
 export async function removeFlags(
   email: string,
@@ -96,4 +108,39 @@ export async function archiveMessage(
   uid: number
 ): Promise<void> {
   return invoke('archive_message', { email, mailbox, uid })
+}
+
+export async function saveDraft(
+  email: string,
+  mailbox: string,
+  uid: number | undefined,
+  subject: string,
+  body: string,
+  to?: EmailAddress[],
+  cc?: EmailAddress[],
+  bcc?: EmailAddress[]
+): Promise<number> {
+  console.log('Saving draft:', {
+    email,
+    mailbox,
+    uid,
+    subject,
+    body,
+    to,
+    cc,
+    bcc,
+  })
+
+  const newUid = invoke<number>('save_draft', {
+    email,
+    mailbox,
+    uid,
+    subject,
+    body,
+    to,
+    cc,
+    bcc,
+  })
+
+  return newUid
 }
