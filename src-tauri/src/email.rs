@@ -332,6 +332,8 @@ pub fn save_draft(
         subject.unwrap_or("")
     );
 
+    // set the mime type to html
+    raw_email.push_str("Content-Type: text/html; charset=UTF-8\r\n");
     if let Some(to) = to {
         raw_email.push_str(&format!("To: {}\r\n", parse_addrs_to_string(to)));
     }

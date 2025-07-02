@@ -34,7 +34,7 @@ export class Message {
 
   constructor(
     mailbox: Mailbox,
-    uid: number,
+    uid: number | undefined,
     date: Date,
     from: EmailAddress[],
     to: EmailAddress[],
@@ -108,7 +108,7 @@ export class Message {
       )
 
       this.flags = message.flags || []
-      this.body = message.body || 'No body content available.'
+      this.body = message.body || ''
     } catch (error) {
       this.syncState = 'error'
       console.error('Failed to load message body:', error)
@@ -176,27 +176,7 @@ export class Message {
     }
   }
 
-  static draft = async (mailbox: Mailbox) => {
-    const newMessage = new Message(
-      mailbox,
-      0, // UID will be set when saving the draft
-      new Date(),
-      [],
-      [],
-      [],
-      [],
-      '',
-      {},
-      ['\\Draft'],
-      ''
-    )
-    newMessage.uid = undefined // UID is not set initially
-    const newUid = await newMessage.save()
-    mailbox.messages.push(newMessage)
-    return newUid
-  }
-
-  private save = async () => {
+  public save = async () => {
     console.log('Saving draft...')
     try {
       const newUid = await saveDraft(

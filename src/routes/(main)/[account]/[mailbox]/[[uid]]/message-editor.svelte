@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { TrixEditor } from 'svelte-trix'
   import { Button } from '$lib/components/ui/button'
   import Separator from '$lib/components/ui/separator/separator.svelte'
   import AddressInput from '$lib/components/custom/address-input.svelte'
@@ -49,12 +50,7 @@
     </div>
   </header>
   <Separator class="mx-4 w-auto" />
-  <textarea
-    onchange={message.saveDebounced}
-    bind:value={message.body}
-    class="border-none p-2 h-64 w-full"
-    placeholder="Email body"
-  ></textarea>
+  <TrixEditor bind:value={message.body} onChange={message.saveDebounced} />
   <div class="flex flex-row gap-2 m-3">
     <Button variant="outline" class="flex-1" onclick={message.send}>Send</Button
     >

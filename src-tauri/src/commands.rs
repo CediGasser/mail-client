@@ -262,7 +262,7 @@ pub async fn send_email(
 
     let message = message
         .subject(subject)
-        .header(ContentType::TEXT_PLAIN)
+        .header(ContentType::TEXT_HTML)
         .body(body.to_string())
         .map_err(|e| Error::new(ErrorKind::Generic(e.to_string()), "Failed to create email"))?;
 

@@ -29,9 +29,23 @@
     }
 
     try {
-      const uid = await Message.draft(draftsMailbox)
+      const newMessage = new Message(
+        draftsMailbox,
+        undefined,
+        new Date(),
+        [],
+        [],
+        [],
+        [],
+        '',
+        {},
+        ['\\Draft'],
+        ''
+      )
+      const newUid = await newMessage.save()
+      draftsMailbox.messages.push(newMessage)
 
-      await navigateTo(account.email, draftsMailbox.name, uid ?? null)
+      await navigateTo(account.email, draftsMailbox.name, newUid ?? null)
     } catch (error) {
       console.error('Error creating draft:', error)
     }
