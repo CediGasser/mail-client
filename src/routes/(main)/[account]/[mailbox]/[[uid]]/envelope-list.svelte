@@ -26,7 +26,11 @@
     if (!search) return true
     const searchLower = search.toLowerCase()
     return (
-      envelope.from?.toLowerCase().includes(searchLower) ||
+      envelope.from
+        .map((v) => v.address + (v.name ?? ''))
+        .join('')
+        ?.toLowerCase()
+        .includes(searchLower) ||
       envelope.subject?.toLowerCase().includes(searchLower)
     )
   }

@@ -1,6 +1,5 @@
 use crate::error::{Error, Result};
 use std::{collections::HashMap, net::TcpStream};
-use tauri::utils::config::parse;
 use utf7_imap::decode_utf7_imap;
 
 use imap::types::NameAttribute;
@@ -380,7 +379,7 @@ fn parse_addrs<'x>(addrs: Option<&Address<'x>>) -> Option<Vec<EmailAddress>> {
     Some(
         addr.iter()
             .filter_map(|addr| {
-                if let Some(email) = &addr.address {
+                if let Some(_) = &addr.address {
                     Some(EmailAddress {
                         name: addr.name().map(|n| n.to_string()),
                         address: addr.address().map(|a| a.to_string()).unwrap_or_default(),
